@@ -11,6 +11,18 @@ Proje üç dikey (vertical) üzerine kurulur:
 
 Proje bir müşteri yönetim sistemi, satış takip sistemi veya lead yönetim paneli olarak düşünülmemelidir.
 
+**GitHub:** https://github.com/Brkcelik/sparkdeal
+**Yerel çalıştırma:** `py run.py` → http://127.0.0.1:5001
+
+---
+
+## Önemli Geçmiş Kararlar
+
+- **Demo veriler temizlendi:** Faz 7 sonrası seed.py ile oluşturulan 25 demo ürün (product_url='#') ve ilişkili kayıtları silindi. Veritabanında yalnızca gerçek scrape verisi var (476 ürün: 266 ecommerce/N11, 210 gaming/Steam).
+- **Port 5001:** run.py'de port 5000 yerine 5001 kullanılıyor (5000'de başka proje var).
+- **Faz 10 eklendi:** Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı) yeni bir faz olarak eklendi. Eski Faz 10 (Chart.js) → Faz 11, eski Faz 11 (Görseller) → Faz 12 oldu.
+- **Git kurulumu:** Proje git'e bağlandı. Her fazdan sonra commit atmak yeterli (`git add . && git commit -m "..." && git push`).
+
 ---
 
 ## Yol Haritası
