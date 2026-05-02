@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Tarama Geçmişi{% endblock %}
+{% block page_title %}Tarama Geçmişi{% endblock %}
+{% block page_sub %}ScrapeRun kayıtları{% endblock %}
+
+{% block topbar_right %}
+<form method="post" action="{{ url_for('scrape_runs.trigger', source_name='steam') }}"
+      style="display:inline;" onsubmit="this.querySelector('button').disabled=true;">
+  <input type="hidden" name="next" value="{{ url_for('scrape_runs.list') }}">
+  <button type="submit" class="btn btn-primary btn-sm">Tümünü Tara</button>
+</form>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filtreler -->
+<form method="get" class="filter-bar mb-16">
+  <div class="filter-group">
+    <label class="filter-label">Kaynak</label>
+    <select name="source_id" class="select" onchange="this.form.submit()">
+      <option value="">Tüm Kaynaklar</option>
+      {% for src in sources %}
+      <option value="{{ src.id }}" {% if source_filter == src.id %}selected{% endif %}>{{ src.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Durum</label>
+    <select name="status" class="select" onchange="this.form.submit()">
+      <option value="">Tüm Durumlar</option>
+      <option value="success" {% if status_filter == 'success' %}selected{% endif %}>Başarılı</option>
+      <option value="error"   {% if status_filter == 'error' %}selected{% endif %}>Hatalı</option>
+      <option value="skipped" {% if status_filter == 'skipped' %}selected{% endif %}>Atlandı</option>
+      <option value="running" {% if status_filter == 'running' %}selected{% endif %}>Çalışıyor</option>
+    </select>
+  </div>
+</form>
+
+{% if runs.items %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Kaynak</th>
+        <th>Durum</th>
+        <th>Bulunan</th>
+        <th>Yeni</th>
+        <th>Güncellenen</th>
+        <th>Süre</th>
+        <th>Başlangıç</th>
+        <th>Hata</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for run in runs.items %}
+      <tr>
+        <td class="text-muted">{{ run.id }}</td>
+        <td>
+          {% if run.source %}
+            <span class="product-source-badge {{ run.source.vertical }}">{{ run.source.name }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td><span class="run-status run-status--{{ run.status }}">{{ run.status }}</span></td>
+        <td>{{ run.found_count or 0 }}</td>
+        <td class="text-success">{{ run.new_product_count or 0 }}</td>
+        <td class="text-accent">{{ run.updated_product_count or 0 }}</td>
+        <td class="text-muted">
+          {% if run.duration_seconds is not none %}{{ run.duration_seconds }}s{% else %}—{% endif %}
+        </td>
+        <td class="text-muted">
+          {% if run.started_at %}{{ run.started_at.strftime('%d.%m.%Y %H:%M') }}{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if run.error_message %}
+          <span class="text-danger text-sm" title="{{ run.error_message }}">
+            {{ run.error_message[:60] }}{% if run.error_message|length > 60 %}…{% endif %}
+          </span>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+{% if runs.pages > 1 %}
+<div class="pagination mt-16">
+  {% if runs.has_prev %}
+  <a href="{{ url_for('scrape_runs.list', page=runs.prev_num, source_id=source_filter, status=status_filter) }}"
+     class="page-btn">&larr; Önceki</a>
+  {% endif %}
+  <span class="page-info">{{ runs.page }} / {{ runs.pages }}</span>
+  {% if runs.has_next %}
+  <a href="{{ url_for('scrape_runs.list', page=runs.next_num, source_id=source_filter, status=status_filter) }}"
+     class="page-btn">Sonraki &rarr;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state" style="padding: 48px 0;">
+  <div class="empty-state-title">Henüz tarama kaydı yok</div>
+  <div class="empty-state-sub">Kaynaklar sayfasından veya <code>flask scrape &lt;kaynak&gt;</code> komutuyla tarama başlatın.</div>
+</div>
+{% endif %}
+
+{% endblock %}

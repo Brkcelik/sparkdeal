@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_sub %}{{ pagination.total }} ürün bulundu{% endblock %}
+
+{% block content %}
+
+<!-- Filter bar -->
+<form method="GET" action="{{ url_for('products.list') }}" id="filter-form">
+  {% if vertical %}<input type="hidden" name="vertical" value="{{ vertical }}">{% endif %}
+
+  <div class="filter-bar">
+
+    <div class="filter-group">
+      <label class="filter-label">Ara</label>
+      <input class="input" type="text" name="q" value="{{ search }}" placeholder="Ürün ara...">
+    </div>
+
+    {% if sources %}
+    <div class="filter-group">
+      <label class="filter-label">Kaynak</label>
+      <select class="select" name="source_id">
+        <option value="">Tüm Kaynaklar</option>
+        {% for s in sources %}
+        <option value="{{ s.id }}" {% if current_source_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="filter-group">
+      <label class="filter-label">Min. İndirim</label>
+      <select class="select" name="min_discount">
+        <option value="">Tümü</option>
+        <option value="10"  {% if min_discount == 10  %}selected{% endif %}>%10+</option>
+        <option value="20"  {% if min_discount == 20  %}selected{% endif %}>%20+</option>
+        <option value="30"  {% if min_discount == 30  %}selected{% endif %}>%30+</option>
+        <option value="50"  {% if min_discount == 50  %}selected{% endif %}>%50+</option>
+        <option value="70"  {% if min_discount == 70  %}selected{% endif %}>%70+</option>
+      </select>
+    </div>
+
+    {% if vertical == 'gaming' %}
+    <div class="filter-group">
+      <label class="filter-label">Platform</label>
+      <select class="select" name="platform">
+        <option value="">Tümü</option>
+        <option value="PC"       {% if platform == 'PC'       %}selected{% endif %}>PC</option>
+        <option value="PS5"      {% if platform == 'PS5'      %}selected{% endif %}>PS5</option>
+        <option value="PS4"      {% if platform == 'PS4'      %}selected{% endif %}>PS4</option>
+        <option value="Xbox"     {% if platform == 'Xbox'     %}selected{% endif %}>Xbox</option>
+        <option value="Nintendo" {% if platform == 'Nintendo' %}selected{% endif %}>Nintendo</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Bölge</label>
+      <select class="select" name="region">
+        <option value="">Tümü</option>
+        <option value="TR"     {% if region == 'TR'     %}selected{% endif %}>TR</option>
+        <option value="EU"     {% if region == 'EU'     %}selected{% endif %}>EU</option>
+        <option value="Global" {% if region == 'Global' %}selected{% endif %}>Global</option>
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="filter-group">
+      <label class="filter-label">Sırala</label>
+      <select class="select" name="sort">
+        {% for val, label in sort_options.items() %}
+        <option value="{{ val }}" {% if sort == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-group" style="justify-content: flex-end;">
+      <label class="checkbox-label" style="margin-top: 18px;">
+        <input type="checkbox" name="instock" value="1" {% if only_instock %}checked{% endif %} onchange="this.form.submit()">
+        Yalnızca stokta
+      </label>
+    </div>
+
+    <div class="filter-group" style="justify-content: flex-end;">
+      <div style="margin-top: 18px; display: flex; gap: 6px;">
+        <button type="submit" class="btn btn-primary">Filtrele</button>
+        <a href="{{ url_for('products.list', vertical=vertical) }}" class="btn btn-ghost">Sıfırla</a>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<!-- Product grid -->
+{% if products %}
+<div class="product-grid">
+  {% for product in products %}
+    {% include "products/_card.html" %}
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}
+  <a href="{{ url_for('products.list', vertical=vertical, page=pagination.prev_num, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort) }}"
+     class="page-btn">&laquo;</a>
+  {% else %}
+  <span class="page-btn disabled">&laquo;</span>
+  {% endif %}
+
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+    <a href="{{ url_for('products.list', vertical=vertical, page=p, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort) }}"
+       class="page-btn {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+    {% else %}
+    <span class="page-btn disabled" style="border:none; background:transparent;">…</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if pagination.has_next %}
+  <a href="{{ url_for('products.list', vertical=vertical, page=pagination.next_num, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort) }}"
+     class="page-btn">&raquo;</a>
+  {% else %}
+  <span class="page-btn disabled">&raquo;</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-title">Ürün bulunamadı</div>
+  <div class="empty-state-sub">Filtre kriterlerini değiştirmeyi deneyin.</div>
+</div>
+{% endif %}
+
+{% endblock %}

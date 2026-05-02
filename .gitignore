@@ -1,0 +1,45 @@
+# Veritabanı
+instance/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Sanal ortam
+venv/
+.venv/
+env/
+.env/
+
+# Ortam değişkenleri
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Playwright
+playwright-report/
+
+# Log dosyaları
+*.log
+
+# Yerel görsel cache (Faz 12'de eklenecek)
+app/static/images/products/

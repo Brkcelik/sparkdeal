@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Alarmlar{% endblock %}
+{% block page_title %}Alarmlar{% endblock %}
+{% block page_sub %}Fiyat ve indirim bildirimleri{% endblock %}
+
+{% block topbar_right %}
+<form method="post" action="{{ url_for('alerts.check') }}" style="display:inline;">
+  <button type="submit" class="btn btn-ghost btn-sm">Şimdi Kontrol Et</button>
+</form>
+{% endblock %}
+
+{% block content %}
+
+<!-- Alarm oluşturma formu -->
+<div class="alert-create-card mb-24">
+  <div class="section-header" style="margin-bottom:16px;">
+    <span class="section-title">Yeni Alarm</span>
+  </div>
+
+  <form method="post" action="{{ url_for('alerts.create') }}" id="alertForm">
+
+    <div class="filter-bar" style="gap:12px; flex-wrap:wrap;">
+
+      <!-- Alarm tipi -->
+      <div class="filter-group">
+        <label class="filter-label">Alarm Tipi</label>
+        <select name="alarm_type" id="alarmType" class="select" onchange="updateAlarmForm()">
+          <option value="price">Hedef Fiyat</option>
+          <option value="atl">En Düşük Fiyat (ATL)</option>
+          <option value="keyword">Anahtar Kelime</option>
+          <option value="category">Kategori İndirimi</option>
+        </select>
+      </div>
+
+      <!-- Ürün seçimi (price + atl) -->
+      <div class="filter-group" id="fieldProduct">
+        <label class="filter-label">Ürün</label>
+        <select name="product_id" class="select" style="width:280px;">
+          <option value="">— Seç —</option>
+          {% for p in products_sample %}
+          <option value="{{ p.id }}"
+            {% if prefill_product and prefill_product.id == p.id %}selected{% endif %}>
+            {{ p.name[:60] }}{% if p.current_price %} ({{ p.current_price | price }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Hedef fiyat (price) -->
+      <div class="filter-group" id="fieldTargetPrice">
+        <label class="filter-label">Hedef Fiyat (₺)</label>
+        <input type="number" name="target_price" class="input" step="0.01" min="0"
+               placeholder="örn. 1500"
+               {% if prefill_product and prefill_product.current_price %}
+               value="{{ (prefill_product.current_price * 0.9) | round(0) | int }}"
+               {% endif %}>
+      </div>
+
+      <!-- Anahtar kelime (keyword) -->
+      <div class="filter-group" id="fieldKeyword" style="display:none;">
+        <label class="filter-label">Anahtar Kelime</label>
+        <input type="text" name="keyword" class="input" placeholder="örn. RTX 4070">
+      </div>
+
+      <!-- Kategori (category) -->
+      <div class="filter-group" id="fieldCategory" style="display:none;">
+        <label class="filter-label">Kategori</label>
+        <input type="text" name="category" class="input" placeholder="örn. Monitör">
+      </div>
+
+      <!-- Min indirim (keyword + category) -->
+      <div class="filter-group" id="fieldMinDiscount" style="display:none;">
+        <label class="filter-label">Min. İndirim %</label>
+        <input type="number" name="min_discount_percent" class="input" min="1" max="100"
+               value="20" step="1">
+      </div>
+
+      <!-- Vertical (keyword + category) -->
+      <div class="filter-group" id="fieldVertical" style="display:none;">
+        <label class="filter-label">Kategori (opsiyonel)</label>
+        <select name="vertical" class="select">
+          <option value="">Tüm Kategoriler</option>
+          <option value="ecommerce">E-ticaret</option>
+          <option value="fashion">Moda &amp; Spor</option>
+          <option value="gaming">Oyun</option>
+        </select>
+      </div>
+
+      <div class="filter-group" style="justify-content:flex-end; margin-top:auto;">
+        <button type="submit" class="btn btn-primary">Alarm Oluştur</button>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- Aktif alarmlar -->
+<div class="section-header">
+  <span class="section-title">Aktif Alarmlar</span>
+  <span class="section-count">{{ active|length }}</span>
+</div>
+
+{% if active %}
+<div class="table-wrap mb-24">
+  <table>
+    <thead>
+      <tr>
+        <th>Tip</th>
+        <th>Açıklama</th>
+        <th>Son Tetiklenme</th>
+        <th>Oluşturulma</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in active %}
+      <tr>
+        <td><span class="alert-type-badge alert-type--{{ alert.alarm_type }}">{{ alert.type_label }}</span></td>
+        <td>{{ alert.description }}</td>
+        <td class="text-muted">
+          {% if alert.last_triggered_at %}
+            {{ alert.last_triggered_at.strftime('%d.%m.%Y %H:%M') }}
+          {% else %}
+            Henüz tetiklenmedi
+          {% endif %}
+        </td>
+        <td class="text-muted">{{ alert.created_at.strftime('%d.%m.%Y') }}</td>
+        <td>
+          <div class="flex gap-6">
+            <form method="post" action="{{ url_for('alerts.toggle', alert_id=alert.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-ghost btn-xs">Pasif Yap</button>
+            </form>
+            <form method="post" action="{{ url_for('alerts.delete', alert_id=alert.id) }}" style="display:inline;"
+                  onsubmit="return confirm('Bu alarmı silmek istediğinize emin misiniz?');">
+              <button type="submit" class="btn btn-danger-ghost btn-xs">Sil</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state mb-24">
+  <div class="empty-state-title">Aktif alarm yok</div>
+  <div class="empty-state-sub">Yukarıdaki formdan yeni alarm oluşturun.</div>
+</div>
+{% endif %}
+
+<!-- Pasif alarmlar -->
+{% if inactive %}
+<div class="section-header">
+  <span class="section-title" style="color:var(--text-muted);">Pasif Alarmlar</span>
+  <span class="section-count">{{ inactive|length }}</span>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Tip</th>
+        <th>Açıklama</th>
+        <th>Son Tetiklenme</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in inactive %}
+      <tr style="opacity:0.6;">
+        <td><span class="alert-type-badge alert-type--{{ alert.alarm_type }}">{{ alert.type_label }}</span></td>
+        <td>{{ alert.description }}</td>
+        <td class="text-muted">
+          {% if alert.last_triggered_at %}
+            {{ alert.last_triggered_at.strftime('%d.%m.%Y %H:%M') }}
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <div class="flex gap-6">
+            <form method="post" action="{{ url_for('alerts.toggle', alert_id=alert.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-ghost btn-xs">Aktif Yap</button>
+            </form>
+            <form method="post" action="{{ url_for('alerts.delete', alert_id=alert.id) }}" style="display:inline;"
+                  onsubmit="return confirm('Bu alarmı silmek istediğinize emin misiniz?');">
+              <button type="submit" class="btn btn-danger-ghost btn-xs">Sil</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateAlarmForm() {
+  const t = document.getElementById('alarmType').value;
+  document.getElementById('fieldProduct').style.display     = (t === 'price' || t === 'atl') ? '' : 'none';
+  document.getElementById('fieldTargetPrice').style.display = (t === 'price') ? '' : 'none';
+  document.getElementById('fieldKeyword').style.display     = (t === 'keyword') ? '' : 'none';
+  document.getElementById('fieldCategory').style.display    = (t === 'category') ? '' : 'none';
+  document.getElementById('fieldMinDiscount').style.display = (t === 'keyword' || t === 'category') ? '' : 'none';
+  document.getElementById('fieldVertical').style.display    = (t === 'keyword' || t === 'category') ? '' : 'none';
+}
+// Sayfaya ön dolu ürün geliyorsa price tipini seç
+{% if prefill_product %}
+document.getElementById('alarmType').value = 'price';
+updateAlarmForm();
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Fırsatlar{% endblock %}
+{% block page_title %}Fırsatlar{% endblock %}
+{% block page_sub %}%30 ve üzeri indirimde, stokta olan ürünler{% endblock %}
+
+{% block content %}
+
+{% if not all_deals %}
+<div class="empty-state">
+  <div class="empty-state-title">Fırsat bulunamadı</div>
+  <div class="empty-state-sub">Seed script ile demo verileri yükleyin veya filtre kriterlerini gevşetin.</div>
+</div>
+{% else %}
+
+{% if gaming %}
+<div class="deals-section">
+  <div class="deals-section-header">
+    <span class="deals-vertical-label gaming">Oyun İndirimleri</span>
+    <span class="section-count">{{ gaming|length }} fırsat</span>
+    <a href="{{ url_for('products.list', vertical='gaming', min_discount=30, instock='1') }}" class="section-link">Tümünü gör &rarr;</a>
+  </div>
+  <div class="product-grid">
+    {% for product in gaming %}
+      {% include "products/_card.html" %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if ecommerce %}
+<div class="deals-section">
+  <div class="deals-section-header">
+    <span class="deals-vertical-label ecommerce">E-ticaret</span>
+    <span class="section-count">{{ ecommerce|length }} fırsat</span>
+    <a href="{{ url_for('products.list', vertical='ecommerce', min_discount=30, instock='1') }}" class="section-link">Tümünü gör &rarr;</a>
+  </div>
+  <div class="product-grid">
+    {% for product in ecommerce %}
+      {% include "products/_card.html" %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if fashion %}
+<div class="deals-section">
+  <div class="deals-section-header">
+    <span class="deals-vertical-label fashion">Moda &amp; Spor</span>
+    <span class="section-count">{{ fashion|length }} fırsat</span>
+    <a href="{{ url_for('products.list', vertical='fashion', min_discount=30, instock='1') }}" class="section-link">Tümünü gör &rarr;</a>
+  </div>
+  <div class="product-grid">
+    {% for product in fashion %}
+      {% include "products/_card.html" %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

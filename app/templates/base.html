@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Spark{% endblock %} — Spark</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">S</div>
+      <span class="brand-name"><span>Spark</span>Deal</span>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="nav-group">
+        <a href="{{ url_for('dashboard.index') }}"
+           class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Dashboard
+        </a>
+        <a href="{{ url_for('products.list') }}"
+           class="nav-item {% if request.endpoint == 'products.list' and not request.args.get('vertical') %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Tüm Ürünler
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Alışveriş</div>
+
+        <a href="{{ url_for('products.list', vertical='ecommerce') }}"
+           class="nav-item {% if request.endpoint == 'products.list' and request.args.get('vertical') == 'ecommerce' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          E-ticaret
+        </a>
+
+        <a href="{{ url_for('products.list', vertical='fashion') }}"
+           class="nav-item nav-item--fashion {% if request.endpoint == 'products.list' and request.args.get('vertical') == 'fashion' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Moda &amp; Spor
+        </a>
+
+        <a href="{{ url_for('products.list', vertical='gaming') }}"
+           class="nav-item nav-item--gaming {% if request.endpoint == 'products.list' and request.args.get('vertical') == 'gaming' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Oyun İndirimleri
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Analiz</div>
+
+        <a href="{{ url_for('deals.list') }}"
+           class="nav-item nav-item--deals {% if request.endpoint == 'deals.list' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Fırsatlar
+        </a>
+
+        <a href="{{ url_for('alerts.list') }}"
+           class="nav-item {% if request.endpoint and request.endpoint.startswith('alerts.') %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Alarmlar
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Sistem</div>
+
+        <a href="{{ url_for('sources.list') }}"
+           class="nav-item {% if request.endpoint == 'sources.list' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Kaynaklar
+        </a>
+
+        <a href="{{ url_for('scrape_runs.list') }}"
+           class="nav-item {% if request.endpoint == 'scrape_runs.list' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Tarama Geçmişi
+        </a>
+      </div>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      SparkDeal &middot; Faz 5
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main-wrap">
+    <div class="topbar">
+      <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+      <span class="topbar-sub">{% block page_sub %}{% endblock %}</span>
+      <div class="topbar-right">{% block topbar_right %}{% endblock %}</div>
+    </div>
+
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-list">
+          {% for category, message in messages %}
+          <div class="flash-message flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+</div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

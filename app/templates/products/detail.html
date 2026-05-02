@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name[:60] }}{% endblock %}
+{% block page_title %}Ürün Detayı{% endblock %}
+{% block page_sub %}{{ product.source.name }}{% endblock %}
+
+{% block topbar_right %}
+<a href="{{ url_for('alerts.list', product_id=product.id) }}" class="btn btn-ghost" style="font-size:12px;">
+  + Alarm Kur
+</a>
+<a href="{{ url_for('products.list', vertical=product.vertical) }}" class="btn btn-ghost" style="font-size:12px;">
+  &larr; Listeye Dön
+</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="detail-layout">
+
+  <!-- Sol: görsel -->
+  <div>
+    <div class="detail-image-box">
+      <div class="product-img-placeholder {{ product.vertical }}">
+        {{ product.name[0] | upper }}{{ (product.name[1] if product.name|length > 1 else '') | upper }}
+      </div>
+    </div>
+
+    <div class="detail-card mt-16">
+      <div class="detail-card-title">Fiyat İstatistikleri</div>
+      {% set cur = product.currency or 'TRY' %}
+      {% set ps = product.stats %}
+      <div class="price-stat-row">
+        <span class="price-stat-label">Güncel fiyat</span>
+        <span class="price-stat-value {% if ps and ps.is_all_time_low %}highlight{% endif %}">
+          {{ product.current_price | price(cur) }}
+          {% if ps and ps.is_all_time_low %}<span class="badge badge-atl" style="margin-left:6px;">ATL</span>{% endif %}
+        </span>
+      </div>
+      {% if ps %}
+      <div class="price-stat-row">
+        <span class="price-stat-label">Tüm zamanların en düşüğü</span>
+        <span class="price-stat-value">{{ ps.lowest_price_all_time | price(cur) if ps.lowest_price_all_time else '—' }}</span>
+      </div>
+      <div class="price-stat-row">
+        <span class="price-stat-label">30 günlük en düşük</span>
+        <span class="price-stat-value">{{ ps.lowest_price_30d | price(cur) if ps.lowest_price_30d else '—' }}</span>
+      </div>
+      <div class="price-stat-row">
+        <span class="price-stat-label">30 günlük ortalama</span>
+        <span class="price-stat-value">{{ ps.average_price_30d | price(cur) if ps.average_price_30d else '—' }}</span>
+      </div>
+      <div class="price-stat-row">
+        <span class="price-stat-label">90 günlük en düşük</span>
+        <span class="price-stat-value">{{ ps.lowest_price_90d | price(cur) if ps.lowest_price_90d else '—' }}</span>
+      </div>
+      {% if ps.days_at_current_low %}
+      <div class="price-stat-row">
+        <span class="price-stat-label">Bu fiyatta kaç gün</span>
+        <span class="price-stat-value">{{ ps.days_at_current_low }} gün</span>
+      </div>
+      {% endif %}
+      {% elif stats %}
+      <div class="price-stat-row">
+        <span class="price-stat-label">Kayıttaki en düşük</span>
+        <span class="price-stat-value">{{ stats.min_price | price(cur) }}</span>
+      </div>
+      <div class="price-stat-row">
+        <span class="price-stat-label">Kayıttaki en yüksek</span>
+        <span class="price-stat-value">{{ stats.max_price | price(cur) }}</span>
+      </div>
+      <div class="price-stat-row">
+        <span class="price-stat-label">Ortalama fiyat</span>
+        <span class="price-stat-value">{{ stats.avg_price | price(cur) }}</span>
+      </div>
+      {% endif %}
+      <div class="price-stat-row">
+        <span class="price-stat-label">Kayıt sayısı</span>
+        <span class="price-stat-value">{{ history|length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sağ: bilgiler -->
+  <div class="detail-info">
+
+    <div>
+      <span class="product-source-badge {{ product.vertical }}">{{ product.source.name }}</span>
+      {% if product.vertical == 'gaming' %}
+        {% if product.platform %}<span class="badge badge-platform" style="margin-left:6px;">{{ product.platform }}</span>{% endif %}
+        {% if product.region %}<span class="badge badge-tr" style="margin-left:4px;">{{ product.region }}</span>{% endif %}
+        {% if product.edition %}<span class="badge badge-platform" style="margin-left:4px;">{{ product.edition }}</span>{% endif %}
+      {% endif %}
+    </div>
+
+    <h1 class="detail-title">{{ product.name }}</h1>
+
+    {% if product.brand or product.category %}
+    <div class="text-sec">
+      {% if product.brand %}<strong>{{ product.brand }}</strong>{% endif %}
+      {% if product.category %} &middot; {{ product.category }}{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="detail-price-row">
+      <span class="detail-price">{{ product.current_price | price(product.currency or 'TRY') }}</span>
+      {% if product.old_price %}
+      <span class="detail-old-price">{{ product.old_price | price(product.currency or 'TRY') }}</span>
+      {% endif %}
+      {% if product.discount_percent %}
+      <span class="detail-discount-badge">%{{ product.discount_percent | int }} indirim</span>
+      {% endif %}
+    </div>
+
+    <div class="detail-meta">
+      <span class="flex-center gap-6">
+        <span class="stock-dot {{ product.stock_status }}"></span>
+        <span class="stock-label {{ product.stock_status }}">
+          {% if product.stock_status == 'in_stock' %}Stokta var
+          {% elif product.stock_status == 'out_of_stock' %}Stok tükenmiş
+          {% else %}Stok bilinmiyor{% endif %}
+        </span>
+      </span>
+    </div>
+
+    <!-- Deal score -->
+    <div class="detail-card">
+      <div class="detail-card-title">Fırsat Skoru</div>
+      <div class="flex-center gap-12">
+        <span class="deal-score-big {{ product.score_tier }}">{{ product.deal_score | int }}</span>
+        <div>
+          <div style="font-size:14px; font-weight:700; color:var(--text-primary);">{{ product.score_label }}</div>
+          <div class="text-muted text-sm mt-4">0–40 zayıf &middot; 40–80 dikkate değer &middot; 80–120 iyi &middot; 120+ çok iyi</div>
+        </div>
+      </div>
+      {% set lines = product.analysis_lines %}
+      {% if lines %}
+      <ul class="analysis-list mt-12">
+        {% for line in lines %}
+        <li class="analysis-item">{{ line }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Fiyat analizi rozetleri -->
+    {% if product.badge_atl or product.badge_30d or product.badge_90d %}
+    <div class="detail-badges">
+      {% if product.badge_atl %}<span class="badge badge-atl badge-lg">Tüm Zamanların En Düşüğü</span>{% endif %}
+      {% if product.badge_30d %}<span class="badge badge-30d badge-lg">Son 30 Günün En Düşüğü</span>{% endif %}
+      {% if product.badge_90d %}<span class="badge badge-90d badge-lg">Son 90 Günün En Düşüğü</span>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="detail-btn-row">
+      {% if product.product_url %}
+      <a href="{{ product.product_url }}" target="_blank" rel="noopener" class="btn-visit">
+        Siteye Git &rarr;
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="text-muted text-sm">
+      İlk görülme: {{ product.first_seen_at.strftime('%d.%m.%Y') }}
+      &middot;
+      Son görülme: {{ product.last_seen_at.strftime('%d.%m.%Y') }}
+    </div>
+
+  </div>
+</div>
+
+{% if cross_site %}
+<!-- Diğer sitelerde aynı ürün -->
+<hr class="divider">
+<div class="section-header">
+  <span class="section-title">Diğer Sitelerde Bu Ürün</span>
+  <span class="section-count">{{ cross_site|length }} eşleşme</span>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Site</th>
+        <th>Ürün Adı</th>
+        <th>Güncel Fiyat</th>
+        <th>İndirim</th>
+        <th>Stok</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in cross_site %}
+      <tr>
+        <td><span class="product-source-badge {{ p.vertical }}">{{ p.source.name }}</span></td>
+        <td class="text-sm">{{ p.name[:70] }}{% if p.name|length > 70 %}…{% endif %}</td>
+        <td>
+          <strong {% if p.current_price < product.current_price %}style="color:var(--success)"{% endif %}>
+            {{ p.current_price | price(p.currency or 'TRY') }}
+          </strong>
+          {% if p.current_price < product.current_price %}
+          <span class="text-muted text-sm" style="margin-left:4px;">
+            ({{ ((product.current_price - p.current_price) / product.current_price * 100) | int }}% daha ucuz)
+          </span>
+          {% endif %}
+        </td>
+        <td>
+          {% if p.discount_percent %}
+          <span class="badge badge-warning">%{{ p.discount_percent | int }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <span class="stock-dot {{ p.stock_status }}"></span>
+          {% if p.stock_status == 'in_stock' %}<span class="text-success text-sm">Stokta</span>
+          {% else %}<span class="text-muted text-sm">—</span>{% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('products.detail', product_id=p.id) }}" class="btn btn-ghost" style="font-size:11px; padding:4px 8px;">Detay</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Price history table -->
+<hr class="divider">
+
+<div class="section-header">
+  <span class="section-title">Fiyat Geçmişi</span>
+  <span class="section-count">{{ history|length }} kayıt &mdash; grafik Faz 10'da eklenecek</span>
+</div>
+
+{% if history %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Tarih</th>
+        <th>Fiyat</th>
+        <th>Değişim</th>
+        <th>Eski Fiyat</th>
+        <th>İndirim</th>
+        <th>Stok</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in history %}
+      <tr>
+        <td>{{ h.recorded_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td><strong>{{ h.price | price(product.currency or 'TRY') }}</strong></td>
+        <td>
+          {% if h.price_change < -0.01 %}
+            <span style="color: var(--success); font-weight:600; font-size:12px;">
+              ▼ {{ (h.price_change * -1) | price(product.currency or 'TRY') }}
+            </span>
+          {% elif h.price_change > 0.01 %}
+            <span style="color: var(--danger); font-weight:600; font-size:12px;">
+              ▲ {{ h.price_change | price(product.currency or 'TRY') }}
+            </span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>{{ h.old_price | price(product.currency or 'TRY') if h.old_price else '—' }}</td>
+        <td>
+          {% if h.discount_percent %}
+          <span class="badge badge-warning">%{{ h.discount_percent | int }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <span class="stock-dot {{ h.stock_status or 'unknown' }}" style="display:inline-block; margin-right:5px;"></span>
+          {% if h.stock_status == 'in_stock' %}<span class="text-success">Stokta</span>
+          {% elif h.stock_status == 'out_of_stock' %}<span class="text-danger">Tükendi</span>
+          {% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-title">Fiyat geçmişi yok</div>
+  <div class="empty-state-sub">Bu ürün için henüz kayıt bulunmuyor.</div>
+</div>
+{% endif %}
+
+{% endblock %}

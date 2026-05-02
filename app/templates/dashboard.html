@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_sub %}Genel özet{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Toplam Ürün</div>
+    <div class="stat-value stat-value--blue">{{ stats.total_products }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">İndirimdeki Ürün</div>
+    <div class="stat-value stat-value--green">{{ stats.on_sale }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Tüm Zamanların En Düşüğü</div>
+    <div class="stat-value stat-value--red">{{ stats.atl_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">E-ticaret</div>
+    <div class="stat-value stat-value--blue">{{ stats.ecommerce_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Moda &amp; Spor</div>
+    <div class="stat-value stat-value--purple">{{ stats.fashion_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Oyun</div>
+    <div class="stat-value stat-value--green">{{ stats.gaming_count }}</div>
+  </div>
+</div>
+
+<!-- Son tarama bilgisi -->
+{% if sources %}
+<div class="scrape-status-bar">
+  {% for src in sources %}
+  <span class="scrape-status-item">
+    <span class="product-source-badge {{ src.vertical }}">{{ src.name }}</span>
+    <span class="text-muted text-sm">
+      {% if src.last_scraped_at %}
+        {{ src.last_scraped_at.strftime('%d.%m %H:%M') }}
+      {% else %}
+        hiç taranmadı
+      {% endif %}
+    </span>
+    {% if src.error_count and src.error_count > 0 %}
+    <span class="text-danger text-sm">({{ src.error_count }} hata)</span>
+    {% endif %}
+  </span>
+  {% endfor %}
+  <a href="{{ url_for('scrape_runs.list') }}" class="section-link" style="margin-left:auto; font-size:11px;">
+    Tarama geçmişi &rarr;
+  </a>
+</div>
+{% endif %}
+
+<!-- Hata veren kaynaklar uyarısı -->
+{% if errored_sources %}
+<div class="error-alert mb-16">
+  <div class="error-alert-title">Hata veren kaynaklar</div>
+  <div class="error-alert-body">
+    {% for src in errored_sources %}
+    <span class="product-source-badge {{ src.vertical }}">{{ src.name }}</span>
+    <span class="text-muted text-sm">{{ src.error_count }} başarısız tarama</span>
+    {% if not loop.last %}&middot;{% endif %}
+    {% endfor %}
+    <a href="{{ url_for('scrape_runs.list', status='error') }}" class="text-accent text-sm" style="margin-left:8px;">
+      Detay &rarr;
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Top deals -->
+<div class="section-header">
+  <span class="section-title">En İyi Fırsatlar</span>
+  <span class="section-count">{{ top_deals|length }} ürün</span>
+  <a href="{{ url_for('deals.list') }}" class="section-link">Tümünü gör &rarr;</a>
+</div>
+
+{% if top_deals %}
+<div class="product-grid mb-24">
+  {% for product in top_deals %}
+    {% include "products/_card.html" %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state mb-24">
+  <div class="empty-state-title">Henüz fırsat yok</div>
+  <div class="empty-state-sub">Seed script ile demo verileri yükleyin.</div>
+</div>
+{% endif %}
+
+<hr class="divider">
+
+<!-- Biggest discounts -->
+<div class="section-header">
+  <span class="section-title">En Yüksek İndirim Oranları</span>
+  <span class="section-count">{{ biggest_discounts|length }} ürün</span>
+  <a href="{{ url_for('products.list', sort='discount') }}" class="section-link">Tümünü gör &rarr;</a>
+</div>
+
+{% if biggest_discounts %}
+<div class="product-grid">
+  {% for product in biggest_discounts %}
+    {% include "products/_card.html" %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-title">Ürün bulunamadı</div>
+</div>
+{% endif %}
+
+{% endblock %}

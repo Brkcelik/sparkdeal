@@ -1,0 +1,51 @@
+<div class="product-card">
+  <div class="product-card-img">
+    <div class="product-img-placeholder {{ product.vertical }}">
+      {{ product.name[0] | upper }}{{ (product.name[1] if product.name|length > 1 else '') | upper }}
+    </div>
+    {% if product.discount_percent %}
+    <span class="discount-badge-overlay">%{{ product.discount_percent | int }}</span>
+    {% endif %}
+  </div>
+
+  <div class="product-card-body">
+    <div>
+      <span class="product-source-badge {{ product.vertical }}">{{ product.source.name }}</span>
+      {% if product.vertical == 'gaming' %}
+        {% if product.platform %}<span class="badge badge-platform" style="margin-left:4px;">{{ product.platform }}</span>{% endif %}
+        {% if product.region == 'TR' %}<span class="badge badge-tr" style="margin-left:4px;">TR</span>{% endif %}
+      {% endif %}
+      {% if product.badge_atl %}<span class="badge badge-atl" style="margin-left:4px;" title="Tum zamanlarin en dusuk fiyati">ATL</span>{% endif %}
+      {% if product.badge_30d %}<span class="badge badge-30d" style="margin-left:4px;" title="Son 30 gunun en dusuk fiyati">30G MIN</span>{% endif %}
+      {% if product.badge_90d %}<span class="badge badge-90d" style="margin-left:4px;" title="Son 90 gunun en dusuk fiyati">90G MIN</span>{% endif %}
+    </div>
+
+    <div class="product-name">{{ product.name }}</div>
+
+    {% if product.brand %}
+    <div class="product-brand">{{ product.brand }}{% if product.category %} &middot; {{ product.category }}{% endif %}</div>
+    {% endif %}
+
+    <div class="product-pricing">
+      <span class="product-current-price">{{ product.current_price | price(product.currency or 'TRY') }}</span>
+      {% if product.old_price %}
+      <span class="product-old-price">{{ product.old_price | price(product.currency or 'TRY') }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="product-card-footer">
+    <span class="deal-score-pill {{ product.score_tier }}">
+      {{ product.deal_score | int }} puan
+    </span>
+    <span class="flex-center gap-6">
+      <span class="stock-dot {{ product.stock_status }}"></span>
+      <span class="stock-label {{ product.stock_status }}">
+        {% if product.stock_status == 'in_stock' %}Stokta
+        {% elif product.stock_status == 'out_of_stock' %}Tükendi
+        {% else %}Bilinmiyor{% endif %}
+      </span>
+    </span>
+    <a href="{{ url_for('products.detail', product_id=product.id) }}" class="btn-detail">Detay</a>
+  </div>
+</div>
