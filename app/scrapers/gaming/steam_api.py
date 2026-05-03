@@ -1,8 +1,12 @@
 """Steam Store scraper — arama sayfasini HTML olarak parse eder.
 
-Steam'in indirim sayfasi (`search/?specials=1&cc=tr`) statik HTML'de
+Steam'in indirim sayfasi (`search/?specials=1`) statik HTML'de
 isim, gorsel, fiyat ve indirim bilgilerini dogrudan icerir.
-appdetails API'si gerekli degil — sayfa basina 50 urun, max 3 sayfa.
+Sayfa basina 50 urun, MAX_PAGES kadar sayfa cekiliyor.
+
+Iki farkli URL kullanilir (farkli oyun setleri donduruyor):
+  - Standart URL: ?specials=1&cc=tr
+  - ndl=1 URL:    ?specials=1&ndl=1&cc=tr  (ek indirimli oyunlar)
 """
 import logging
 import re
@@ -14,6 +18,7 @@ from app.scrapers.base import BaseScraper
 logger = logging.getLogger(__name__)
 
 _SEARCH_URL = 'https://store.steampowered.com/search/?specials=1&cc=tr&l=turkish&start={start}'
+_SEARCH_NDL_URL = 'https://store.steampowered.com/search/?specials=1&ndl=1&cc=tr&l=turkish&start={start}'
 _FEATURED_URL = 'https://store.steampowered.com/api/featuredcategories/?cc=tr&l=turkish'
 
 HEADERS = {
@@ -26,7 +31,7 @@ HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 }
 
-MAX_PAGES = 3      # 3 x 50 = max 150 urun
+MAX_PAGES = 10     # 10 x 50 = max 500 urun
 PAGE_DELAY = 1.5   # Steam rate limit icin bekleme (saniye)
 
 
@@ -34,7 +39,13 @@ class SteamScraper(BaseScraper):
     """Steam arama sayfasindan indirimli oyunlari ceker."""
 
     def scrape(self, target) -> list[dict]:
-        products = self._scrape_search_pages()
+        seen: set[str] = set()
+        products = []
+
+        # Her iki URL'yi sira ile tara; appid tekrarina karsi seen seti kullan
+        for url_template in (_SEARCH_URL, _SEARCH_NDL_URL):
+            batch = self._scrape_search_pages(url_template, seen)
+            products.extend(batch)
 
         if not products:
             logger.warning("Steam HTML bos dondu, featuredcategories yedegine geciliyor")
@@ -46,13 +57,12 @@ class SteamScraper(BaseScraper):
     # ------------------------------------------------------------------
     # Birincil: HTML arama sayfasi
     # ------------------------------------------------------------------
-    def _scrape_search_pages(self) -> list[dict]:
+    def _scrape_search_pages(self, url_template: str, seen: set) -> list[dict]:
         products = []
-        seen: set[str] = set()
 
         for page in range(MAX_PAGES):
             start = page * 50
-            url = _SEARCH_URL.format(start=start)
+            url = url_template.format(start=start)
             try:
                 r = requests.get(url, headers=HEADERS, timeout=15)
                 r.raise_for_status()

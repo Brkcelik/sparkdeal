@@ -1,119 +1,107 @@
-"""Superstep scraper — requests + BeautifulSoup.
+"""Superstep scraper — Playwright (Next.js SSR, Tailwind CSS).
 
-Superstep, Next.js + Tailwind CSS kullanır.
-Ürün verileri client-side fetch ile yüklenir; statik HTML'de ürün kartı yoktur.
-Bu scraper gelecekte Playwright veya XHR endpoint keşfiyle tamamlanacak (Faz 7/8).
+Kart yapısı (Playwright-rendered):
+  [data-testid*="product"]
+    └── a[href]           → ürün URL'si
+         ├── img           → görsel (src), ürün adı (alt)
+         ├── span.line-through  → eski fiyat
+         └── span[class*="text-primary"]  → güncel fiyat
 """
 import logging
 import re
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
 
-from app.scrapers.base import BaseScraper
+from app.scrapers.playwright_base import PlaywrightBaseScraper
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = 'https://www.superstep.com.tr'
+_CARD_SEL = '[data-testid*="product"]'
+_READY_SEL = '[data-testid*="product"] a[href]'
 
-# Superstep'in dahili API'si — keşfedilirse buraya eklenir
-_LISTING_API = None
 
+class SuperstepScraper(PlaywrightBaseScraper):
 
-class SuperstepScraper(BaseScraper):
+    MAX_PAGES = 10
+    PAGINATION_PARAM = 'page'
 
-    def scrape(self, target) -> list[dict]:
-        # Eğer dahili API endpoint'i keşfedilmişse onu kullan
-        if _LISTING_API:
-            return self._scrape_api(target)
-        return self._scrape_html(target)
-
-    def _scrape_html(self, target) -> list[dict]:
-        session = self.make_session()
-        self.warm_session(session, BASE_URL)
-
+    def _scrape_page(self, page, target) -> list[dict]:
+        self.load_page(page, target.url)
         try:
-            r = session.get(target.url, timeout=15)
-        except Exception as exc:
-            logger.error("Superstep bağlantı hatası: %s", exc)
-            return []
+            page.wait_for_selector(_READY_SEL, timeout=15_000)
+        except Exception:
+            logger.warning("Superstep: ürün kartları yüklenmedi (%s)", target.url)
 
-        if r.status_code != 200:
-            logger.error("Superstep HTTP %s: %s", r.status_code, target.url)
-            return []
+        self.scroll_load(page, times=4, pause=2)
+        html = page.content()
 
-        soup = BeautifulSoup(r.text, 'lxml')
-
-        # Next.js + Tailwind: sabit class isimleri yok — data-* attribute veya
-        # yapısal selektörlerle dene
-        cards = (
-            soup.select('[data-product-id]')
-            or soup.select('[data-testid*="product"]')
-            or soup.select('article')
-        )
+        soup = BeautifulSoup(html, 'lxml')
+        cards = soup.select(_CARD_SEL)
 
         if not cards:
-            logger.warning(
-                "Superstep: ürün kartı bulunamadı — Next.js client-side render. "
-                "Playwright gerekiyor (Faz 8)."
-            )
+            logger.warning("Superstep: kart bulunamadı — %s", target.url)
             return []
 
         category = getattr(target, 'category', None)
-        products = []
-        for card in cards:
-            parsed = self._parse_card(card, category)
-            if parsed:
-                products.append(parsed)
-
-        logger.info("Superstep: %d ürün bulundu", len(products))
+        products = [p for card in cards if (p := self._parse_card(card, category))]
+        logger.info("Superstep: %d ürün (%s)", len(products), target.url)
         return products
-
-    def _scrape_api(self, target) -> list[dict]:
-        try:
-            r = requests.get(_LISTING_API, timeout=15)
-            r.raise_for_status()
-            items = r.json()
-        except Exception as exc:
-            logger.error("Superstep API hatası: %s", exc)
-            return []
-        return [self._parse_api_item(item) for item in items if item]
 
     def _parse_card(self, card, category=None) -> dict | None:
         link = card.select_one('a[href]')
         if not link:
             return None
         product_url = urljoin(BASE_URL, link.get('href', ''))
-        external_id = card.get('data-product-id') or self._extract_id(product_url)
 
-        name_el = card.select_one('h2') or card.select_one('h3') or card.select_one('[data-testid*="name"]')
-        name = name_el.get_text(strip=True) if name_el else link.get('title', '').strip()
+        img = card.select_one('img[alt]')
+        name = img.get('alt', '').strip() if img else ''
         if not name:
             return None
 
-        img = card.select_one('img')
-        image_url = img.get('src') or img.get('data-src') or '' if img else ''
+        image_url = ''
+        if img:
+            image_url = img.get('src') or img.get('data-src') or ''
+            if image_url.startswith('//'):
+                image_url = 'https:' + image_url
+
+        # Eski fiyat: line-through sınıflı span
+        old_el = card.select_one('span.line-through')
+        old_price = self.normalize_price(old_el.get_text() if old_el else '')
+
+        # Güncel fiyat: text-primary sınıflı span
+        price_el = card.select_one('span[class*="text-primary"]')
+        current_price = self.normalize_price(price_el.get_text() if price_el else '')
+
+        # İndirim yalnızca eski fiyat mevcutsa hesaplanır
+        discount = self.calc_discount(old_price, current_price)
+
+        if current_price is None or discount is None:
+            return None
+
+        external_id = self._extract_id(product_url)
+
+        brand_el = card.select_one('[class*="brand"], [data-testid*="brand"]')
+        brand = brand_el.get_text(strip=True) if brand_el else name.split()[0] if name else None
 
         return {
             'name': name,
-            'current_price': None,
-            'old_price': None,
-            'discount_percent': None,
+            'current_price': current_price,
+            'old_price': old_price,
+            'discount_percent': discount,
             'product_url': product_url,
             'image_url': image_url,
-            'brand': None,
-            'category': category,
+            'brand': brand,
+            'category': category or 'Spor',
             'stock_status': 'in_stock',
             'external_id': external_id,
             'vertical': 'fashion',
+            'gender': self.detect_gender(name, product_url),
             'platform': None,
             'region': None,
             'edition': None,
         }
-
-    def _parse_api_item(self, item: dict) -> dict | None:
-        return None  # API keşfedilince doldurulacak
 
     def _extract_id(self, url: str) -> str:
         m = re.search(r'/(\d+)(?:[?/]|$)', url)

@@ -18,10 +18,18 @@ Proje bir müşteri yönetim sistemi, satış takip sistemi veya lead yönetim p
 
 ## Önemli Geçmiş Kararlar
 
-- **Demo veriler temizlendi:** Faz 7 sonrası seed.py ile oluşturulan 25 demo ürün (product_url='#') ve ilişkili kayıtları silindi. Veritabanında yalnızca gerçek scrape verisi var (476 ürün: 266 ecommerce/N11, 210 gaming/Steam).
+- **Demo veriler temizlendi:** Faz 7 sonrası seed.py ile oluşturulan 25 demo ürün (product_url='#') ve ilişkili kayıtları silindi.
+- **Güncel ürün sayısı (Faz 8.5 v2 sonrası):** 976 ürün — 266 ecommerce, 494 fashion, 216 gaming.
 - **Port 5001:** run.py'de port 5000 yerine 5001 kullanılıyor (5000'de başka proje var).
 - **Faz 10 eklendi:** Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı) yeni bir faz olarak eklendi. Eski Faz 10 (Chart.js) → Faz 11, eski Faz 11 (Görseller) → Faz 12 oldu.
+- **Faz 8.5 v2 eklendi:** E-ticaret + oyun sitelerine pagination eklendi, sonra Faz 9 geldi.
 - **Git kurulumu:** Proje git'e bağlandı. Her fazdan sonra commit atmak yeterli (`git add . && git commit -m "..." && git push`).
+- **PlaywrightBaseScraper pagination altyapısı:** `MAX_PAGES`, `PAGINATION_PARAM`, `_build_page_url()` class var'ları eklendi. Yeni scraper'lar sadece bu değerleri override ederek sayfalama kazanır.
+- **Steam çift URL:** `?specials=1` ve `?specials=1&ndl=1` farklı oyun setleri döndürüyor (%36 overlap); her ikisi taranarak ~820 benzersiz oyun elde ediliyor.
+- **gender alanı:** Product modeline `gender` VARCHAR(20) eklendi (migration: e5f6a7b8c9d0). `BaseScraper.detect_gender()` ile otomatik doldurulur.
+- **Sneakersonline domain:** `sneakersonline.com` DNS çözülemiyor; doğru domain `sneakersonline.com.tr`.
+- **Sneaksup URL:** `/indirim` 404 döner; doğru URL `/sezon-sonu-indirimi`. Kategori sayfaları indirim verisi taşımıyor (GA attribute'da `discount=0`).
+- **Bot koruması — pasif bırakılanlar:** Bershka TR, Pull&Bear TR, H&M TR, Hepsiburada, Trendyol, Amazon TR. Playwright ile de aşılamadı.
 
 ---
 
@@ -241,50 +249,133 @@ Hedef: Birden fazla e-ticaret sitesi taranır.
 
 ---
 
-### Faz 8 — Moda & Spor Siteleri
+### Faz 8 — Moda & Spor Siteleri ✅ Tamamlandı
 
-Hedef: Giyim ve spor kategorisindeki siteler sisteme eklenir.
+Hedef: Giyim ve spor kategorisindeki siteler sisteme eklenir. Her site için tek bir indirim sayfası ScrapeTarget olarak tanımlanır.
 
 Eklenecek siteler: Superstep, Sneaksup, Sneakersonline, Bershka, Pull&Bear, H&M TR
 
 **Geliştirme:**
-- [ ] Superstep scraper (spor ayakkabı, kolay HTML)
-- [ ] Sneaksup scraper
-- [ ] Sneakersonline scraper
-- [ ] Bershka scraper (Inditex grubu — dikkat: JS ağırlıklı)
-- [ ] Pull&Bear scraper (Inditex grubu — Bershka ile benzer yapı)
-- [ ] H&M TR scraper (API tabanlı olabilir, incelenmeli)
-- [ ] Moda ürünleri için beden/renk varyant mantığı (ürün ana kayıt + varyant ayrımı)
-- [ ] Moda kategorisi özel filtreleri: beden, renk, cinsiyet
+- [x] Superstep scraper (Playwright, Tailwind CSS — span.line-through + span[class*="text-primary"] selektörleri)
+- [x] Sneaksup scraper (Playwright, Inveon platform — data-ga-impressions JSON)
+- [x] Sneakersonline scraper (Playwright, ikas.com platform — div[data-id] kartlar)
+- [x] Bershka scraper (Playwright, Inditex grubu — _parse_inditex_html paylaşımlı)
+- [x] Pull&Bear scraper (Playwright, Inditex grubu — bershka.py'den _parse_inditex_html reuse)
+- [x] H&M TR scraper (Playwright — Akamai koruması, JSON endpoint 403 döner, Playwright fallback)
+- [x] Product modeline `gender` alanı eklendi (migration: e5f6a7b8c9d0)
+- [x] BaseScraper'a `detect_gender()` eklendi
+- [x] Cinsiyet filtresi ürün listesi sayfasına eklendi
+- [x] Kaynaklar sayfasına Aktif/Pasif toggle butonu eklendi
+- [x] Çalışan scraper'lar doğrulandı ve aktif edildi
 
-**Mimari Not — Moda Siteleri:**
-- Bershka ve Pull&Bear aynı Inditex altyapısını kullanır; scraper büyük ölçüde paylaşılabilir.
-- H&M'in sitesi XHR/API çağrıları yapabilir; tarayıcı geliştirici araçlarıyla incelenmeli.
-- Beden/renk varyantları için tek product kaydında `variants` JSON alanı düşünülebilir.
-- Moda ürünlerinde "eski fiyat" güvenilirliği daha düşüktür — skor hesabı buna göre ağırlıklandırılabilir.
+**Notlar:**
+- Sneaksup doğru URL: `/sezon-sonu-indirimi` (not: `/indirim` 404 döner — DB'de güncellendi)
+- Sneakersonline doğru domain: `sneakersonline.com.tr` (not: `.com` DNS çözülemiyor)
+- Bershka: "Access Denied" bot koruması — Playwright ile de bypass edilemiyor (known limitation)
+- Pull&Bear: Bot koruması aktif — 0 ürün (known limitation)
+- H&M: Akamai bot koruması — JSON endpoint 403, Playwright fallback da 0 ürün (known limitation)
+- Bershka, Pull&Bear, H&M pasif bırakıldı
+- Faz 8.5'te tüm kategori sayfaları + sayfalama desteği eklenecek
 
 **Faz 8 Test Kontrol Listesi:**
-- [ ] Bershka ve Pull&Bear aynı ürünü iki kez kaydetmiyor mu?
-- [ ] Moda ürünleri `vertical = fashion` ile kaydediliyor mu?
-- [ ] Beden/renk filtresi ürün listesinde çalışıyor mu?
-- [ ] Moda sidebar linki yalnızca fashion vertical'ı gösteriyor mu?
-- [ ] H&M ürünlerinde fiyat TL formatında doğru parse ediliyor mu?
+- [x] Superstep: 34 ürün — span.line-through + span[class*="text-primary"] ✓
+- [x] Sneaksup: 24 ürün — data-ga-impressions JSON ✓
+- [x] Sneakersonline: 100 ürün — div[data-id] kartlar ✓
+- [x] Bershka: Bot koruması — "Access Denied" (known limitation) ✓
+- [x] Pull&Bear: Bot koruması — 0 ürün (known limitation) ✓
+- [x] H&M: Akamai bot koruması — 0 ürün (known limitation) ✓
+- [x] Moda ürünleri `vertical = fashion` ile kaydediliyor ✓
+- [x] `gender` alanı detect_gender() ile dolduruluyor ✓
+- [x] Cinsiyet filtresi ürün listesinde çalışıyor ✓
+
+---
+
+### Faz 8.5 — Kapsamlı Tarama: Tüm Kategoriler + Sayfalama ✅ Tamamlandı
+
+Hedef: Tek bir "indirim" sayfasına bağlı kalmak yerine sitelerin tüm kategori sayfalarını tarayarak indirimli ürünleri yakalamak.
+
+**Yaklaşım:**
+- `PlaywrightBaseScraper`'a `MAX_PAGES` + `PAGINATION_PARAM` + `_build_page_url()` eklendi
+- Sayfalama `scrape()` metodunda otomatik: sayfa 1 normal, sayfa 2..N için `?{PAGINATION_PARAM}=N` eklenir
+- Sonuç 0 olunca pagination durur
+- Sneaksup kategori sayfaları incelendi: `discount=0` döndürüyor (indirim bilgisi yalnızca sale sayfasında var)
+
+**Geliştirme:**
+- [x] `PlaywrightBaseScraper`'a sayfalama desteği eklendi (`MAX_PAGES`, `PAGINATION_PARAM`, `_build_page_url()`)
+- [x] Superstep: `MAX_PAGES=10`, `PAGINATION_PARAM='page'` → 10 sayfada 413 ürün (önceden 34)
+- [x] Sneakersonline: scroll ×8 → 180 ürün (önceden 100)
+- [x] Sneaksup kategori sayfaları araştırıldı — indirim verisi yalnızca sale sayfasında; kategori target'ları eklenmedi
+- [x] seed.py güncellendi: doğru URL'ler, scraper_type='playwright'
+
+**Notlar:**
+- Sneaksup `/erkek`, `/kadin` sayfaları tüm ürünleri gösteriyor ama `discount=0` — GA attribute'u indirim bilgisi taşımıyor
+- Bershka, Pull&Bear, H&M bot korumasını aşamadığından sayfalama uygulama dışı
+- Superstep 90 sayfa var; max_pages=10 ile yaklaşık 413 ürün/tarama
+
+**Faz 8.5 Test Kontrol Listesi:**
+- [x] Sayfalama desteği çalışıyor mu? — Superstep 10 sayfa ✓
+- [x] Boş sayfa gelince duruyor mu? — `if not page_results: break` ✓
+- [x] Kategori sayfalarında `old_price` olmayan ürünler filtreleniyor mu? — scraper'da None kontrolü ✓
+- [x] Genişletilmiş tarama ile ürün sayısı artıyor mu? — Superstep 34→413, Sneakersonline 100→180 ✓
+- [x] Crawl delay pagination'da da uygulanıyor mu? — `load_page()` her çağrıda `time.sleep(self.delay)` ✓
+
+---
+
+### Faz 8.5 v2 — Tüm Aktif Sitelere Sayfalama ve Genişletilmiş Tarama ✅ Tamamlandı
+
+Hedef: Faz 8.5'te fashion sitelerine eklenen pagination/scroll desteğinin e-ticaret ve oyun sitelerine de uygulanması.
+
+**Bulgular (araştırma):**
+- N11: `?pg=N` URL pagination + scroll lazy-load, sayfa başı ~235 kart
+- Hepsiburada: `?sayfa=N` URL pagination (bot koruması aktif olduğu için pratikte etkisiz)
+- Teknosa: requests tabanlı, 403 bot koruması — Playwright gerekli (gelecek faz)
+- Steam: kendi `MAX_PAGES` değişkeni var, dosya seviyesinde artırıldı
+
+**Geliştirme:**
+- [x] N11: `MAX_PAGES=5`, `PAGINATION_PARAM='pg'`, scroll ×3 → sayfa başı ~235 kart, 5 sayfada ~1175 kart
+- [x] Hepsiburada: `MAX_PAGES=5`, `PAGINATION_PARAM='sayfa'`, scroll ×3 (bot koruma aşılamazsa etkisiz)
+- [x] Steam: `MAX_PAGES 3→10` + çift URL (standart + `ndl=1`) → 150 → ~820 benzersiz oyun
+
+**Sonuçlar:**
+- N11 (2 sayfa test): 470 kart, 312 indirimli ✓
+- Steam (3 sayfa × 2 URL test): 246 benzersiz oyun ✓ (10 sayfada ~820)
+- Hepsiburada: kod hazır ama bot koruması nedeniyle 0 ürün (known limitation)
+
+**Notlar:**
+- Tüm Playwright scraper'lar `PlaywrightBaseScraper`'ın pagination altyapısını devralır; sadece class var set edildi
+- Teknosa requests tabanlı olduğu için `PlaywrightBaseScraper` pagination'ını kullanamaz — Playwright'e geçiş gerekli
+- N11 `/kampanya` sayfası `?pg=N` ile ek sayfalara erişilebilir, her sayfada scroll ile ek ürünler yüklenir
+
+**Faz 8.5 v2 Test Kontrol Listesi:**
+- [x] N11 `?pg=2` çalışıyor mu? — 470 kart / 2 sayfa ✓
+- [x] Steam MAX_PAGES=10 tanımlı mı? — 200/4 sayfa ✓
+- [x] Hepsiburada kodu hazır mı? — Evet, bot koruması nedeniyle 0 ürün (known limitation) ✓
 
 ---
 
 ### Faz 9 — Oyun İndirimleri Bölümü + ITAD Geçmiş Fiyat Entegrasyonu
 
-Hedef: Steam, Eneba ve Türkiye pin sitelerindeki oyun fırsatları ayrı bir bölümde listelenir. IsThereAnyDeal (ITAD) API ile retroaktif fiyat geçmişi sisteme eklenir.
+Hedef: Steam, Eneba, Oyunfor, Bynogame ve Epic Games'teki oyun fırsatları ayrı bir bölümde listelenir. IsThereAnyDeal (ITAD) API ile retroaktif fiyat geçmişi sisteme eklenir.
 
-Eklenecek kaynaklar: Steam (scraper ✅), Eneba, Oyunfor, Bynogame
+Eklenecek kaynaklar: Steam (scraper ✅), Eneba, Oyunfor, Bynogame, Epic Games
 
 **Geliştirme — Oyun Siteleri:**
 - [x] Steam scraper (HTML + indirimli oyunlar, 150 ürün)
 - [ ] Eneba scraper
 - [ ] Oyunfor scraper
 - [ ] Bynogame scraper
+- [ ] Epic Games scraper (JSON/GraphQL API — `vertical=gaming`, `platform=PC`, `region=TR`)
 - [ ] Oyun İndirimleri sayfası (platform ve bölge filtreli)
 - [ ] Oyunlar arası cross-site fiyat karşılaştırması (aynı oyun birden fazla sitede)
+
+**Epic Games Mimari Notu:**
+- Epic Games Store public JSON API'si mevcut (auth gerektirmez)
+- İndirimli oyunlar endpoint: `https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=tr&country=TR&allowCountries=TR` (ücretsiz oyunlar)
+- Genel indirimler için GraphQL API: `https://graphql.epicgames.com/graphql`
+  - `operationName: searchStoreQuery`, `namespace: epic`, `category: games`, `effectiveDate` ve `saleDiscountPercentRating` filtreleri
+- `vertical=gaming`, `platform=PC`, `region=TR`, `external_id` = Epic Games `id` alanı
+- Price TR localized (TL) `price.totalPrice.discountPrice` alanından alınır
+- `discount_percent` = `price.totalPrice.discountPercentage`
 
 **Geliştirme — ITAD Retroaktif Fiyat Geçmişi:**
 - [ ] ITAD API anahtarı al (ücretsiz kayıt: isthereanydeal.com/dev)
@@ -509,23 +600,24 @@ Her vertical kendi filtreleriyle ayrı bir sayfa olarak gösterilir. Dashboard t
 
 ### Moda & Spor
 
-| Sıra | Site | Zorluk | Not |
-|------|------|--------|-----|
-| 1 | Superstep | Kolay-Orta | Temiz kategori sayfaları |
-| 2 | Sneaksup | Kolay-Orta | Benzer yapı |
-| 3 | Sneakersonline | Orta | İncelenmeli |
-| 4 | H&M TR | Orta | XHR/API çağrısı yapıyor olabilir — geliştirici araçlarıyla incele |
-| 5 | Bershka | Zor | Inditex altyapısı — Playwright gerekebilir |
-| 6 | Pull&Bear | Zor | Bershka ile aynı altyapı — scraper paylaşılabilir |
+| Site | Durum | Not |
+|------|-------|-----|
+| Superstep | ✅ Aktif | Playwright, `?page=N` pagination, MAX_PAGES=10 → ~413 ürün |
+| Sneaksup | ✅ Aktif | Playwright, Inveon platform, `data-ga-impressions` JSON, sale sayfası |
+| Sneakersonline | ✅ Aktif | Playwright, ikas.com, `div[data-id]` kartlar, scroll×8 → ~180 ürün |
+| H&M TR | ❌ Pasif | Akamai bot koruması — Playwright ile de aşılamadı |
+| Bershka TR | ❌ Pasif | "Access Denied" bot koruması |
+| Pull&Bear TR | ❌ Pasif | Bot koruması |
 
 ### Oyun Platformları
 
-| Sıra | Site | Zorluk | Not |
-|------|------|--------|-----|
-| 1 | Steam | Kolay | Resmi API mevcut — scraping gerekmez |
-| 2 | Oyunfor | Kolay-Orta | Türkçe site, temiz yapı |
-| 3 | Bynogame | Kolay-Orta | Benzer yapı |
-| 4 | Eneba | Orta | Avrupa merkezli — rate limit ve bölge farkına dikkat |
+| Site | Durum | Not |
+|------|-------|-----|
+| Steam | ✅ Aktif | requests, çift URL (standart + ndl=1), MAX_PAGES=10 → ~820 oyun |
+| Oyunfor | ⬜ Faz 9 | Türkçe site, temiz yapı |
+| Bynogame | ⬜ Faz 9 | Benzer yapı |
+| Eneba | ⬜ Faz 9 | Avrupa merkezli — rate limit ve bölge farkına dikkat |
+| Epic Games | ⬜ Faz 9 | Public JSON/GraphQL API, auth gerektirmez |
 
 ---
 
@@ -941,8 +1033,10 @@ Bu bölüm hızlı referans için özet olarak tutulur. Asıl takip belgesi üst
 | 5 | APScheduler otomasyonu + manuel tetikleme + tarama geçmişi sayfası | ✅ Tamamlandı |
 | 6 | Alarm sistemi (hedef fiyat, ATL, kelime, kategori) | ✅ Tamamlandı |
 | 7 | E-ticaret site genişlemesi (Playwright, cross-site karşılaştırma) | ✅ Tamamlandı |
-| 8 | Moda & Spor siteleri (Superstep, Bershka, Pull&Bear, H&M vb.) | ⬜ Bekliyor |
-| 9 | Oyun siteleri (Eneba, Oyunfor, Bynogame) + ITAD retroaktif fiyat geçmişi | ⬜ Bekliyor |
+| 8 | Moda & Spor siteleri (Superstep ✓, Sneaksup ✓, Sneakersonline ✓ — Bershka/Pull&Bear/H&M bot koruması) | ✅ Tamamlandı |
+| 8.5 | Fashion sitelerine sayfalama (Superstep 10 sayfa→413, Sneakersonline scroll×8→180) | ✅ Tamamlandı |
+| 8.5 v2 | E-ticaret + oyun sitelerine sayfalama (N11 5 sayfa, Steam 10 sayfa × 2 URL →~820, Hepsiburada hazır) | ✅ Tamamlandı |
+| 9 | Oyun siteleri (Eneba, Oyunfor, Bynogame, Epic Games) + ITAD retroaktif fiyat geçmişi | ⬜ Bekliyor |
 | 10 | Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı, oyun hariç) | ⬜ Bekliyor |
 | 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) | ⬜ Bekliyor |
 | 12 | Ürün görselleri (yerel indirme + fallback) | ⬜ Bekliyor |

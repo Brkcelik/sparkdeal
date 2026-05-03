@@ -17,8 +17,8 @@ Türkiye'deki e-ticaret, moda/spor ve oyun platformlarını takip eden; fiyat ge
 | Vertical | Siteler |
 |----------|---------|
 | E-ticaret | Teknosa, Hepsiburada, N11, Amazon TR, Trendyol |
-| Moda & Spor | Superstep, Sneaksup, Bershka, Pull&Bear, H&M TR |
-| Oyun | Steam, Eneba, Oyunfor, Bynogame |
+| Moda & Spor | Superstep ✅, Sneaksup ✅, Sneakersonline ✅, Bershka ❌, Pull&Bear ❌, H&M TR ❌ |
+| Oyun | Steam ✅, Eneba, Oyunfor, Bynogame |
 
 ## Kurulum
 
@@ -55,9 +55,11 @@ Uygulama `http://127.0.0.1:5001` adresinde çalışır.
 | 4 | Fiyat analizi + fırsat skoru | ✅ |
 | 5 | Otomasyon | ✅ |
 | 6 | Alarm sistemi | ✅ |
-| 7 | E-ticaret site genişlemesi | ✅ |
-| 8 | Moda & Spor siteleri | ⬜ |
-| 9 | Oyun siteleri + ITAD geçmişi | ⬜ |
+| 7 | E-ticaret site genişlemesi (Playwright) | ✅ |
+| 8 | Moda & Spor siteleri (Superstep, Sneaksup, Sneakersonline) | ✅ |
+| 8.5 | Fashion sitelerine sayfalama (Superstep 10 sayfa → 413 ürün) | ✅ |
+| 8.5v2 | E-ticaret + oyun sitelerine sayfalama (N11 5 sayfa, Steam 10×2 URL → ~820 oyun) | ✅ |
+| 9 | Oyun siteleri (Eneba, Oyunfor, Bynogame, Epic Games) + ITAD geçmişi | ⬜ |
 | 10 | Çapraz platform fiyat karşılaştırması | ⬜ |
 | 11 | Chart.js grafikleri | ⬜ |
 | 12 | Ürün görselleri | ⬜ |

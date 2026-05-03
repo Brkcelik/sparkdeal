@@ -8,6 +8,7 @@ import logging
 import time
 from abc import abstractmethod
 from typing import Optional
+from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
 from app.scrapers.base import BaseScraper
 
@@ -32,10 +33,16 @@ class PlaywrightBaseScraper(BaseScraper):
     """Playwright gerektiren scraper'lar bu sınıftan türetilir.
 
     Alt sınıflar `_scrape_page(page, target)` metodunu uygulamalıdır.
+
+    Sayfalama:
+        MAX_PAGES      — kaç sayfa taransın (1 = sadece ilk sayfa)
+        PAGINATION_PARAM — URL query param adı (örn. 'page', 'pagenumber')
     """
 
     HEADLESS = True
     PAGE_TIMEOUT = 30_000  # ms
+    MAX_PAGES = 1
+    PAGINATION_PARAM = 'page'
 
     def scrape(self, target) -> list[dict]:
         try:
@@ -64,13 +71,40 @@ class PlaywrightBaseScraper(BaseScraper):
             context.add_init_script(_STEALTH_SCRIPT)
             page = context.new_page()
             try:
-                results = self._scrape_page(page, target)
+                # Sayfa 1
+                page_results = self._scrape_page(page, target)
+                results.extend(page_results)
+
+                # Sayfa 2..MAX_PAGES
+                if self.MAX_PAGES > 1 and page_results:
+                    original_url = target.url
+                    for page_num in range(2, self.MAX_PAGES + 1):
+                        next_url = self._build_page_url(original_url, page_num)
+                        target.url = next_url
+                        page_results = self._scrape_page(page, target)
+                        if not page_results:
+                            break
+                        results.extend(page_results)
+                        logger.info(
+                            "%s: sayfa %d — %d ürün (toplam: %d)",
+                            self.__class__.__name__, page_num,
+                            len(page_results), len(results),
+                        )
+                    target.url = original_url
             except Exception as exc:
                 logger.error("%s Playwright hatası: %s", self.__class__.__name__, exc)
             finally:
                 context.close()
                 browser.close()
         return results
+
+    def _build_page_url(self, base_url: str, page_num: int) -> str:
+        """Base URL'ye sayfa parametresi ekler veya günceller."""
+        parsed = urlparse(base_url)
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        params[self.PAGINATION_PARAM] = [str(page_num)]
+        new_query = urlencode(params, doseq=True)
+        return urlunparse(parsed._replace(query=new_query))
 
     @abstractmethod
     def _scrape_page(self, page, target) -> list[dict]:

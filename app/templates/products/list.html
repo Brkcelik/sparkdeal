@@ -41,6 +41,19 @@
       </select>
     </div>
 
+    {% if vertical == 'fashion' %}
+    <div class="filter-group">
+      <label class="filter-label">Cinsiyet</label>
+      <select class="select" name="gender">
+        <option value="">Tümü</option>
+        <option value="Erkek"  {% if gender == 'Erkek'  %}selected{% endif %}>Erkek</option>
+        <option value="Kadın"  {% if gender == 'Kadın'  %}selected{% endif %}>Kadın</option>
+        <option value="Unisex" {% if gender == 'Unisex' %}selected{% endif %}>Unisex</option>
+        <option value="Çocuk"  {% if gender == 'Çocuk'  %}selected{% endif %}>Çocuk</option>
+      </select>
+    </div>
+    {% endif %}
+
     {% if vertical == 'gaming' %}
     <div class="filter-group">
       <label class="filter-label">Platform</label>
@@ -102,7 +115,7 @@
 {% if pagination.pages > 1 %}
 <div class="pagination">
   {% if pagination.has_prev %}
-  <a href="{{ url_for('products.list', vertical=vertical, page=pagination.prev_num, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort) }}"
+  <a href="{{ url_for('products.list', vertical=vertical, page=pagination.prev_num, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort, gender=gender) }}"
      class="page-btn">&laquo;</a>
   {% else %}
   <span class="page-btn disabled">&laquo;</span>
@@ -110,7 +123,7 @@
 
   {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
     {% if p %}
-    <a href="{{ url_for('products.list', vertical=vertical, page=p, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort) }}"
+    <a href="{{ url_for('products.list', vertical=vertical, page=p, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort, gender=gender) }}"
        class="page-btn {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
     {% else %}
     <span class="page-btn disabled" style="border:none; background:transparent;">…</span>
@@ -118,7 +131,7 @@
   {% endfor %}
 
   {% if pagination.has_next %}
-  <a href="{{ url_for('products.list', vertical=vertical, page=pagination.next_num, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort) }}"
+  <a href="{{ url_for('products.list', vertical=vertical, page=pagination.next_num, q=search, source_id=current_source_id, min_discount=min_discount, instock='1' if only_instock else '', sort=sort, gender=gender) }}"
      class="page-btn">&raquo;</a>
   {% else %}
   <span class="page-btn disabled">&raquo;</span>

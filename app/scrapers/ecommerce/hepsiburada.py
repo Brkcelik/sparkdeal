@@ -18,9 +18,12 @@ _CARD_SEL = 'li[data-test-id="product-card"], li[data-pid], [class*="productList
 
 class HepsiburadaScraper(PlaywrightBaseScraper):
 
+    MAX_PAGES = 5
+    PAGINATION_PARAM = 'sayfa'
+
     def _scrape_page(self, page, target) -> list[dict]:
         self.load_page(page, target.url, wait_selector=_CARD_SEL)
-        self.scroll_load(page, times=2, pause=2)
+        self.scroll_load(page, times=3, pause=2)
         html = page.content()
 
         soup = BeautifulSoup(html, 'lxml')

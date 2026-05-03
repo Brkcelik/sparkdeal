@@ -30,6 +30,7 @@ def list():
     sort = request.args.get('sort', 'deal_score')
     platform = request.args.get('platform')
     region = request.args.get('region')
+    gender = request.args.get('gender')
     page = request.args.get('page', 1, type=int)
 
     query = Product.query
@@ -48,6 +49,8 @@ def list():
         query = query.filter_by(platform=platform)
     if region:
         query = query.filter_by(region=region)
+    if gender:
+        query = query.filter_by(gender=gender)
 
     if sort == 'discount':
         query = query.order_by(Product.discount_percent.desc())
@@ -88,6 +91,7 @@ def list():
         sort_options=SORT_OPTIONS,
         platform=platform,
         region=region,
+        gender=gender,
     )
 
 

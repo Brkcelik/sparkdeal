@@ -16,6 +16,7 @@ class Product(db.Model):
     platform = db.Column(db.String(50), nullable=True)   # gaming: PC / PS5 / Xbox / Nintendo
     region = db.Column(db.String(20), nullable=True)     # gaming: TR / EU / Global
     edition = db.Column(db.String(100), nullable=True)   # gaming: Standard / Deluxe vb.
+    gender = db.Column(db.String(20), nullable=True)     # fashion: Erkek / Kadın / Unisex / Çocuk
     product_url = db.Column(db.String(1000), nullable=True)
     image_url = db.Column(db.String(1000), nullable=True)
     current_price = db.Column(db.Float, nullable=True)

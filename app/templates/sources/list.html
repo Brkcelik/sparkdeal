@@ -42,15 +42,21 @@
       <div class="source-meta">
         Ürün sayısı: {{ s.products.count() }}
       </div>
-      {% if s.is_active %}
-      <form method="post"
-            action="{{ url_for('scrape_runs.trigger', source_name=s.name) }}"
-            style="margin-top:4px;"
-            onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Taranıyor…';">
-        <input type="hidden" name="next" value="{{ url_for('sources.list') }}">
-        <button type="submit" class="btn btn-scrape btn-sm">Tara</button>
-      </form>
-      {% endif %}
+      <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+        <form method="post" action="{{ url_for('sources.toggle', source_id=s.id) }}">
+          <button type="submit" class="btn btn-sm {% if s.is_active %}btn-ghost{% else %}btn-primary{% endif %}">
+            {% if s.is_active %}Pasif Yap{% else %}Aktif Yap{% endif %}
+          </button>
+        </form>
+        {% if s.is_active %}
+        <form method="post"
+              action="{{ url_for('scrape_runs.trigger', source_name=s.name) }}"
+              onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Taranıyor…';">
+          <input type="hidden" name="next" value="{{ url_for('sources.list') }}">
+          <button type="submit" class="btn btn-scrape btn-sm">Tara</button>
+        </form>
+        {% endif %}
+      </div>
     </div>
     {% endfor %}
   </div>

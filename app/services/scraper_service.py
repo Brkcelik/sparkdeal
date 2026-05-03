@@ -73,6 +73,7 @@ def upsert_product(source: Source, data: dict) -> tuple[Product, bool]:
     product.platform = data.get('platform') or product.platform
     product.region = data.get('region') or product.region
     product.edition = data.get('edition') or product.edition
+    product.gender = data.get('gender') or product.gender
     product.last_seen_at = now
     product.updated_at = now
 

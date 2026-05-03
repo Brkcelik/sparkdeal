@@ -19,9 +19,12 @@ _CARD_SEL = 'a.product-card, [class*="product-card"], [class*="productCard"]'
 
 class N11Scraper(PlaywrightBaseScraper):
 
+    MAX_PAGES = 5
+    PAGINATION_PARAM = 'pg'
+
     def _scrape_page(self, page, target) -> list[dict]:
         self.load_page(page, target.url, wait_selector=_CARD_SEL)
-        self.scroll_load(page, times=2)
+        self.scroll_load(page, times=3)
         html = page.content()
 
         soup = BeautifulSoup(html, 'lxml')

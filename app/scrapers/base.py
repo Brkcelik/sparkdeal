@@ -103,3 +103,17 @@ class BaseScraper(ABC):
         if old and current and old > current:
             return round((1 - current / old) * 100, 1)
         return None
+
+    @staticmethod
+    def detect_gender(name: str, url: str = '') -> str | None:
+        """Ürün adı veya URL'den cinsiyet tespit et."""
+        text = (name + ' ' + url).lower()
+        if any(w in text for w in ['erkek', "men's", ' men ', '/men/', 'male', 'boys', 'boy']):
+            return 'Erkek'
+        if any(w in text for w in ['kadın', 'kadin', 'bayan', "women's", ' women ', '/women/', 'female', 'girls', 'girl']):
+            return 'Kadın'
+        if 'unisex' in text:
+            return 'Unisex'
+        if any(w in text for w in ['çocuk', 'cocuk', 'kids', 'junior', 'bebek', 'çocuk']):
+            return 'Çocuk'
+        return None
