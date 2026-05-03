@@ -6,6 +6,14 @@
     {% if product.discount_percent %}
     <span class="discount-badge-overlay">%{{ product.discount_percent | int }}</span>
     {% endif %}
+    {% if product.vertical == 'gaming' %}
+      {% set cp_list = product.competitor_prices.all() %}
+      {% for cp in cp_list %}
+        {% if product.current_price and cp.price and cp.price < product.current_price %}
+        <span class="competitor-cheaper-badge">{{ cp.source_name | title }}'da daha ucuz</span>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
   </div>
 
   <div class="product-card-body">

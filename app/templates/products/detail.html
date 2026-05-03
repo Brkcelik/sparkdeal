@@ -168,6 +168,84 @@
   </div>
 </div>
 
+{% if product.vertical == 'gaming' %}
+{% set cp_list = product.competitor_prices.all() %}
+{% if cp_list %}
+<hr class="divider">
+<div class="section-header">
+  <span class="section-title">Diğer Platformlarda Fiyat</span>
+  <span class="section-count">{{ cp_list|length }} platform</span>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Platform</th>
+        <th>Fiyat</th>
+        <th>Fark</th>
+        <th>Son Kontrol</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Ana kaynak (Steam/Epic) -->
+      <tr>
+        <td><span class="product-source-badge gaming">{{ product.source.name }}</span></td>
+        <td><strong>{{ product.current_price | price(product.currency or 'TRY') }}</strong></td>
+        <td><span class="text-muted text-sm">Referans</span></td>
+        <td class="text-muted text-sm">{{ product.last_seen_at.strftime('%d.%m.%Y') }}</td>
+        <td>
+          {% if product.product_url %}
+          <a href="{{ product.product_url }}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px; padding:4px 8px;">Git</a>
+          {% endif %}
+        </td>
+      </tr>
+      <!-- Rakip fiyatlar -->
+      {% for cp in cp_list %}
+      {% if cp.price %}
+      <tr {% if cp.price < product.current_price %}style="background: rgba(52,199,89,0.05);"{% endif %}>
+        <td>
+          <span class="product-source-badge gaming" style="text-transform:capitalize;">{{ cp.source_name }}</span>
+          {% if cp.price < product.current_price %}
+          <span class="badge badge-atl" style="margin-left:6px; font-size:10px;">Daha Ucuz</span>
+          {% endif %}
+        </td>
+        <td>
+          <strong {% if cp.price < product.current_price %}style="color:var(--success)"{% endif %}>
+            {{ cp.price | price(cp.currency or 'TRY') }}
+          </strong>
+        </td>
+        <td>
+          {% if product.current_price %}
+            {% set diff = cp.price - product.current_price %}
+            {% if diff < -0.01 %}
+            <span style="color:var(--success); font-size:12px; font-weight:600;">
+              {{ (diff * -1) | price(cp.currency or 'TRY') }} daha ucuz
+            </span>
+            {% elif diff > 0.01 %}
+            <span style="color:var(--danger); font-size:12px;">
+              {{ diff | price(cp.currency or 'TRY') }} daha pahalı
+            </span>
+            {% else %}
+            <span class="text-muted text-sm">Aynı fiyat</span>
+            {% endif %}
+          {% endif %}
+        </td>
+        <td class="text-muted text-sm">{{ cp.checked_at.strftime('%d.%m.%Y') }}</td>
+        <td>
+          {% if cp.url %}
+          <a href="{{ cp.url }}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px; padding:4px 8px;">Git</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+
 {% if cross_site %}
 <!-- Diğer sitelerde aynı ürün -->
 <hr class="divider">

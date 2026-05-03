@@ -46,6 +46,11 @@ class Product(db.Model):
         'PriceAlert', foreign_keys='PriceAlert.product_id',
         backref='product', lazy='dynamic'
     )
+    competitor_prices = db.relationship(
+        'CompetitorPrice', backref='product', lazy='dynamic',
+        cascade='all, delete-orphan',
+        order_by='CompetitorPrice.price.asc()'
+    )
 
     @property
     def deal_score(self):

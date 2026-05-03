@@ -61,10 +61,10 @@ def seed():
             'bershka':       Source(name='Bershka TR',   base_url='https://www.bershka.com/tr', vertical='fashion',   scraper_type='playwright', crawl_delay_seconds=3, is_active=False),
             'pullandbear':   Source(name='Pull&Bear TR', base_url='https://www.pullandbear.com/tr', vertical='fashion', scraper_type='playwright', crawl_delay_seconds=3, is_active=False),
             'hm':            Source(name='H&M TR',       base_url='https://www2.hm.com/tr_tr', vertical='fashion',    scraper_type='requests',  crawl_delay_seconds=2, is_active=False),
-            'steam':         Source(name='Steam',        base_url='https://store.steampowered.com', vertical='gaming', scraper_type='api',      crawl_delay_seconds=1, is_active=True),
-            'eneba':         Source(name='Eneba',        base_url='https://www.eneba.com',      vertical='gaming',    scraper_type='requests',  crawl_delay_seconds=2, is_active=False),
-            'oyunfor':       Source(name='Oyunfor',      base_url='https://www.oyunfor.com',    vertical='gaming',    scraper_type='requests',  crawl_delay_seconds=2, is_active=False),
-            'bynogame':      Source(name='Bynogame',     base_url='https://www.bynogame.com',   vertical='gaming',    scraper_type='requests',  crawl_delay_seconds=2, is_active=False),
+            'steam':         Source(name='Steam',        base_url='https://store.steampowered.com',  vertical='gaming', scraper_type='api',      crawl_delay_seconds=1, is_active=True),
+            'epic_games':    Source(name='Epic Games',   base_url='https://store.epicgames.com',     vertical='gaming', scraper_type='api',      crawl_delay_seconds=1, is_active=True),
+            'eneba':         Source(name='Eneba',        base_url='https://www.eneba.com',           vertical='gaming', scraper_type='requests',  crawl_delay_seconds=2, is_active=False),
+            'bynogame':      Source(name='Bynogame',     base_url='https://www.bynogame.com',        vertical='gaming', scraper_type='requests',  crawl_delay_seconds=2, is_active=False),
         }
 
         for s in sources.values():
@@ -114,8 +114,8 @@ def seed():
             dict(source=sources['steam'],   name='Cyberpunk 2077 Complete Edition',    brand='CD Projekt',category='RPG',        current_price=139, old_price=429, discount_percent=68, stock_status='in_stock', platform='PC', region='TR', edition='Complete'),
             dict(source=sources['steam'],   name='Baldur\'s Gate 3',                   brand='Larian Studios',category='RPG',    current_price=249, old_price=499, discount_percent=50, stock_status='in_stock', platform='PC', region='TR', edition='Standard'),
             dict(source=sources['steam'],   name='Elden Ring',                         brand='FromSoftware',category='Aksiyon',  current_price=199, old_price=499, discount_percent=60, stock_status='in_stock', platform='PC', region='TR', edition='Standard'),
-            dict(source=sources['oyunfor'], name='God of War (2018) PC',               brand='Sony',     category='Aksiyon',     current_price=189, old_price=499, discount_percent=62, stock_status='in_stock', platform='PC', region='TR', edition='Standard'),
-            dict(source=sources['oyunfor'], name='Spider-Man Miles Morales PC',        brand='Sony',     category='Aksiyon',     current_price=249, old_price=699, discount_percent=64, stock_status='in_stock', platform='PC', region='EU', edition='Standard'),
+            dict(source=sources['epic_games'], name='God of War (2018) PC',           brand='Sony',     category='Aksiyon',     current_price=189, old_price=499, discount_percent=62, stock_status='in_stock', platform='PC', region='TR', edition='Standard'),
+            dict(source=sources['epic_games'], name='Spider-Man Miles Morales PC',    brand='Sony',     category='Aksiyon',     current_price=249, old_price=699, discount_percent=64, stock_status='in_stock', platform='PC', region='EU', edition='Standard'),
             dict(source=sources['eneba'],   name='FIFA 24 PS5',                        brand='EA Sports',category='Spor',        current_price=449, old_price=899, discount_percent=50, stock_status='in_stock', platform='PS5', region='TR', edition='Standard'),
             dict(source=sources['bynogame'],name='Call of Duty Modern Warfare III PC', brand='Activision',category='FPS',        current_price=599, old_price=1299,discount_percent=54, stock_status='in_stock', platform='PC', region='TR', edition='Standard'),
         ]
@@ -152,8 +152,8 @@ def seed():
             ScrapeTarget(source=sources['sneakersonline'], title='Sneakersonline Tüm Ürünler',    url='https://sneakersonline.com.tr/tum-urunler',                   category='Sneaker',  scrape_interval_minutes=180, is_active=False),
             ScrapeTarget(source=sources['bershka'],        title='Bershka İndirim',               url='https://www.bershka.com/tr/indirim',                          category='Giyim',    scrape_interval_minutes=240, is_active=False),
             ScrapeTarget(source=sources['pullandbear'],    title='Pull&Bear İndirim',             url='https://www.pullandbear.com/tr/indirim',                      category='Giyim',    scrape_interval_minutes=240, is_active=False),
-            ScrapeTarget(source=sources['steam'],       title='Steam Haftalık Fırsatlar',   url='https://store.steampowered.com/specials',         category='Oyun',           scrape_interval_minutes=120, is_active=True),
-            ScrapeTarget(source=sources['oyunfor'],     title='Oyunfor İndirimli Oyunlar',  url='https://www.oyunfor.com/indirimli-oyunlar',       category='Oyun',           scrape_interval_minutes=120, is_active=False),
+            ScrapeTarget(source=sources['steam'],      title='Steam Haftalık Fırsatlar',        url='https://store.steampowered.com/specials',                     category='Oyun', scrape_interval_minutes=120, is_active=True),
+            ScrapeTarget(source=sources['epic_games'], title='Epic Games İndirimli Oyunlar',   url='https://store.epicgames.com/tr/browse?sortBy=releaseDate&onSale=true', category='Oyun', scrape_interval_minutes=180, is_active=True),
             ScrapeTarget(source=sources['trendyol'],    title='Trendyol İndirimli Ürünler', url='https://www.trendyol.com/sr?wc=103108&ob=MOST_DISCOUNTED', category='Genel', scrape_interval_minutes=60, is_active=False),
             ScrapeTarget(source=sources['amazon_tr'],   title='Amazon TR Elektronik',       url='https://www.amazon.com.tr/s?i=electronics&rh=p_n_pct-off-with-tax%3A25259774031', category='Elektronik', scrape_interval_minutes=120, is_active=False),
         ]

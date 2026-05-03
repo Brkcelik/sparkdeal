@@ -169,3 +169,15 @@ def _register_cli(app):
         count = compute_all_stats()
         db.session.commit()
         click.echo(f"  [OK] {count} urun icin istatistik hesaplandi")
+
+    @app.cli.command('fetch-competitor-prices')
+    @click.option('--vertical', default='gaming', show_default=True,
+                  help='Hangi vertical icin calistirilacak (varsayilan: gaming)')
+    def fetch_competitor_prices_cmd(vertical):
+        """Gaming urunler icin Eneba ve Bynogame fiyatlarini guncelle."""
+        from app.services.competitor_service import fetch_all_competitor_prices
+        click.echo(f"[>] {vertical} urunleri icin rakip fiyat lookup basliyor...")
+        result = fetch_all_competitor_prices(vertical=vertical)
+        click.echo(
+            f"  [OK] {result['updated']}/{result['total']} urun guncellendi"
+        )

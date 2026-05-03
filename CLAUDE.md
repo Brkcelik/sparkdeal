@@ -353,29 +353,52 @@ Hedef: Faz 8.5'te fashion sitelerine eklenen pagination/scroll desteğinin e-tic
 
 ---
 
-### Faz 9 — Oyun İndirimleri Bölümü + ITAD Geçmiş Fiyat Entegrasyonu
+### Faz 9 — Epic Games Scraper + Eneba/Bynogame Fiyat Karşılaştırması + ITAD ✅ Tamamlandı (ITAD hariç)
 
-Hedef: Steam, Eneba, Oyunfor, Bynogame ve Epic Games'teki oyun fırsatları ayrı bir bölümde listelenir. IsThereAnyDeal (ITAD) API ile retroaktif fiyat geçmişi sisteme eklenir.
+Hedef: Epic Games'i ikinci birincil oyun kaynağı olarak ekle. Eneba ve Bynogame'i bağımsız ürün kaynağı olarak değil, Steam/Epic oyunları için **fiyat karşılaştırma ortağı** olarak entegre et. Ürün kartlarında "Eneba'da daha ucuz" rozeti, detay sayfasında rakip fiyat tablosu göster.
 
-Eklenecek kaynaklar: Steam (scraper ✅), Eneba, Oyunfor, Bynogame, Epic Games
+**Kaynaklar:**
+- Steam (scraper ✅) — birincil gaming kaynağı
+- Epic Games (GraphQL API) — birincil gaming kaynağı
+- Eneba — fiyat karşılaştırma ortağı (bağımsız kaynak değil; Steam/Epic ürünlerine eşleştirilir)
+- Bynogame — fiyat karşılaştırma ortağı (Eneba ile aynı mimari)
 
-**Geliştirme — Oyun Siteleri:**
-- [x] Steam scraper (HTML + indirimli oyunlar, 150 ürün)
-- [ ] Eneba scraper
-- [ ] Oyunfor scraper
-- [ ] Bynogame scraper
-- [ ] Epic Games scraper (JSON/GraphQL API — `vertical=gaming`, `platform=PC`, `region=TR`)
-- [ ] Oyun İndirimleri sayfası (platform ve bölge filtreli)
-- [ ] Oyunlar arası cross-site fiyat karşılaştırması (aynı oyun birden fazla sitede)
+**Oyunfor — projeden çıkarıldı** (site erişimi 403/404 döndü)
+
+**Geliştirme — Epic Games:**
+- [x] Epic Games scraper (`app/scrapers/gaming/epic_games.py`) — freeGamesPromotions REST + Playwright browse (__NEXT_DATA__ parse)
+- [x] seed.py'e Epic Games Source + ScrapeTarget eklendi
+- [x] registry.py'e `epic_games` → `EpicGamesScraper` eklendi
 
 **Epic Games Mimari Notu:**
-- Epic Games Store public JSON API'si mevcut (auth gerektirmez)
-- İndirimli oyunlar endpoint: `https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=tr&country=TR&allowCountries=TR` (ücretsiz oyunlar)
-- Genel indirimler için GraphQL API: `https://graphql.epicgames.com/graphql`
-  - `operationName: searchStoreQuery`, `namespace: epic`, `category: games`, `effectiveDate` ve `saleDiscountPercentRating` filtreleri
-- `vertical=gaming`, `platform=PC`, `region=TR`, `external_id` = Epic Games `id` alanı
-- Price TR localized (TL) `price.totalPrice.discountPrice` alanından alınır
-- `discount_percent` = `price.totalPrice.discountPercentage`
+- GraphQL endpoint: `POST https://graphql.epicgames.com/graphql`
+- `operationName: searchStoreQuery`, `category: games/edition/base`, `onSale: true`, `country: TR`
+- Sayfalama: `start` parametresi, `count: 40` — `paging.total` gelene kadar devam
+- `external_id` = `id` alanı
+- `current_price` = `price.totalPrice.discountPrice / 100` (kuruş cinsinden döner)
+- `old_price` = `price.totalPrice.originalPrice / 100`
+- `discount_percent` = `round((original - discount) / original * 100)`
+- Görsel: `keyImages` dizisinden `type="DieselGameBoxWide"` veya `"OfferImageWide"`
+- Ürün URL: `https://store.epicgames.com/tr/p/{urlSlug}` veya `{productSlug}`
+- `vertical=gaming`, `platform=PC`, `region=TR`
+
+**Geliştirme — Eneba/Bynogame Fiyat Karşılaştırması:**
+- [x] `CompetitorPrice` modeli oluştur (`app/models/competitor_price.py`) — migration ✓
+- [x] Eneba lookup servisi (`app/services/competitor_service.py`) — `?text=` URL ile Apollo SSR cache parse ✓
+- [x] Bynogame lookup servisi — `/tr/search?query=` + `div.list-group-item` + `span[data-href]` ✓
+- [x] `flask fetch-competitor-prices [gaming]` CLI komutu ✓
+- [x] Ürün kartı (`_card.html`): `competitor_prices`'da `current_price`'dan ucuz kayıt varsa görsel üzerine rozet ✓
+- [x] Ürün detay sayfası (`detail.html`): gaming ürünleri için "Diğer Platformlarda Fiyat" bölümü ✓
+
+**CompetitorPrice Mimari Notu:**
+- `competitor_prices` tablosu: `product_id`, `source_name` ('eneba'/'bynogame'), `price`, `currency`, `url`, `checked_at`
+- `Product` → `competitor_prices` (1:N ilişki)
+- Eneba arama URL: `https://www.eneba.com/tr/search?text={game_name}` — Apollo SSR cache parse (`"text"` key)
+  - `?q=` parametresi çalışmaz; sadece `?text=` SSR'da arama filtresini tetikler
+  - word boundary matching (`\b`) ile false positive azaltıldı
+- Bynogame: `/tr/search?query={name}+cd+key` → `div.list-group-item` > `span.searchhref[data-href]` + `p.font-weight-bolder`
+- Fiyat karşılaştırması: `any(cp.price < product.current_price for cp in product.competitor_prices)`
+- Steam Turkey fiyatları genellikle Eneba/Bynogame'den çok ucuz; tablo "daha pahalı" gösterimi yapar
 
 **Geliştirme — ITAD Retroaktif Fiyat Geçmişi:**
 - [ ] ITAD API anahtarı al (ücretsiz kayıt: isthereanydeal.com/dev)
@@ -386,7 +409,7 @@ Eklenecek kaynaklar: Steam (scraper ✅), Eneba, Oyunfor, Bynogame, Epic Games
 - [ ] Detay sayfasında ITAD kökenli geçmiş kayıtları "Tarihsel Veri" başlığıyla ayrı göster
 - [ ] `historical_low_price` ve `historical_low_date` alanlarını ProductStats'a ekle
 - [ ] ITAD verisini çekme CLI komutu: `flask fetch-itad-history <appid>` ve `flask fetch-itad-history all`
-- [ ] Faz 10 grafiğine ITAD verisi de dahil edilsin (noktalı çizgi veya farklı renk)
+- [ ] Faz 11 grafiğine ITAD verisi de dahil edilsin (noktalı çizgi veya farklı renk)
 
 **ITAD API Mimari Notu:**
 - Ücretsiz kayıt: https://isthereanydeal.com/dev/
@@ -398,14 +421,16 @@ Eklenecek kaynaklar: Steam (scraper ✅), Eneba, Oyunfor, Bynogame, Epic Games
 - ITAD fiyatları USD olabilir — `currency` alanı ile birlikte saklanmalı
 
 **Faz 9 Test Kontrol Listesi:**
-- [ ] Eneba/Oyunfor/Bynogame scraper'ları en az 20 ürün dönüyor mu?
-- [ ] Oyun ürünleri `vertical = gaming` ile kaydediliyor mu?
-- [ ] Platform filtresi (PC/PS5 vb.) doğru çalışıyor mu?
-- [ ] Bölge (TR/EU) filtresi çalışıyor mu?
-- [ ] ITAD API'den geçmiş fiyat verisi çekiliyor mu?
-- [ ] ITAD verisi detay sayfasında "Tarihsel Veri" olarak görünüyor mu?
+- [x] Epic Games scraper mevcut ve kayıtlı — freeGamesPromotions + Playwright browse ✓
+- [x] Epic Games oyunları `vertical=gaming`, `platform=PC`, `region=TR` ile kaydediliyor mu? ✓
+- [x] CompetitorPrice tablosu migration ile oluştu mu? — migration 99785c1fd000 ✓
+- [x] Eneba lookup: bir oyun adı için fiyat döndürüyor mu? — Cyberpunk: 918 TL, Witcher 3: 376 TL ✓
+- [x] Ürün kartında rozet sistemi hazır (Eneba ucuzsa gösterir) ✓
+- [x] Detay sayfasında gaming ürünleri için rakip fiyat tablosu görünüyor mu? ✓
+- [x] `flask fetch-competitor-prices` tüm gaming ürünlerini işliyor mu? — 5/5 test ✓
+- [ ] ITAD entegrasyonu — API anahtarı gerekiyor (beklemede)
+- [ ] ITAD API'den geçmiş fiyat verisi çekiliyor mu? (API key varsa)
 - [ ] Steam appid → ITAD eşleştirmesi başarısız olunca sessizce atlanıyor mu?
-- [ ] ITAD rate limit aşılmadan tüm oyunlar için veri çekilebiliyor mu?
 
 ---
 
@@ -494,6 +519,61 @@ Hedef: Scraper'lardan gelen `image_url` değerleri yerine görseller yerel olara
 
 ---
 
+### Faz 13 — Fiyat Toplayıcı Entegrasyonu: cimri.com + akakce.com
+
+Hedef: cimri.com ve akakce.com gibi fiyat karşılaştırma toplayıcı sitelerini scrape ederek, bot korumalı mağazaları (Hepsiburada, Trendyol vb.) dolaylı olarak kapsama almak. Bu siteler zaten yüzlerce mağazanın fiyatlarını karşılaştırıyor; en düşük fiyatı ve hangi mağazanın en ucuz olduğunu tek bir scrape ile elde edebiliriz.
+
+**Değer Önerisi:**
+- Hepsiburada, Trendyol, Amazon TR gibi bot korumalı sitelere doğrudan erişim sağlanamıyor
+- cimri.com ve akakce.com bu mağazaların verilerini zaten topluyor
+- Bir ürünün hangi mağazada en ucuz olduğunu toplayıcı siteden çekebiliriz
+- Doğrudan taranan ürünlerle fiyat karşılaştırması yapılabilir
+
+**Eklenecek Kaynaklar:**
+- cimri.com — `vertical=ecommerce`, `scraper_type=aggregator`
+- akakce.com — `vertical=ecommerce`, `scraper_type=aggregator`
+
+**Geliştirme:**
+- [ ] cimri.com scraper (`app/scrapers/ecommerce/cimri.py`) — kategori sayfaları taranır, requests ile başla, bot koruması varsa Playwright
+- [ ] akakce.com scraper (`app/scrapers/ecommerce/akakce.py`) — kategori sayfaları taranır, requests ile başla, bot koruması varsa Playwright
+- [ ] `Source.scraper_type` için `aggregator` tipi eklendi (mevcut `scraper_type` VARCHAR alanına yeni değer — migration gerektirmez)
+- [ ] `Product` modeline `store_count` INT alanı eklendi (kaç mağazada listelendiği) — migration gerekir
+- [ ] `Product` modeline `cheapest_store` VARCHAR(100) alanı eklendi (en ucuz mağazanın adı) — migration gerekir
+- [ ] seed.py'e cimri ve akakce Source + ScrapeTarget kayıtları eklendi
+- [ ] registry.py'e cimri ve akakce scraper'ları eklendi
+- [ ] Ürün detay sayfasına "Bu ürün bu mağazalarda da satılıyor" bölümü eklendi (aggregator verisi varsa `cheapest_store` + `store_count` gösterilir)
+- [ ] Faz 10 karşılaştırma sayfası aggregator fiyatlarını da gösterir; `matching_service.py` aggregator kayıtlarını hesaba katar
+
+**Mimari Notlar:**
+- `vertical = 'ecommerce'` — her iki site de ağırlıklı olarak elektronik/ev/spor ürünleri
+- `scraper_type = 'aggregator'` — doğrudan mağaza değil, toplayıcı site
+- `current_price` = aggregator'da gösterilen en düşük fiyat
+- `product_url` = aggregator sitesindeki ürün sayfası URL'si (tüm mağaza karşılaştırması için)
+- `cheapest_store` = en ucuz mağazanın adı (Trendyol, Hepsiburada vb.)
+- `store_count` = kaç mağazada listelendiği
+- cimri.com tarama URL örüntüsü: `/elektronik`, `/ev-yasam`, `/spor` kategori sayfaları + `?sort=minPrice` sıralaması
+- akakce.com tarama URL örüntüsü: `/elektronik`, `/mutfak-urunleri` vb. kategori sayfaları
+- Arama endpoint'leri: cimri `/arama?q=`, akakce `/?q=`
+- Pagination: Her iki site de `?page=N` veya benzeri destekler — `MAX_PAGES` ayarlanacak
+
+**Faz 10 ile İlişki:**
+- Faz 10 (çapraz karşılaştırma): doğrudan taranan ürünleri siteler arası eşleştirir
+- Faz 13 (aggregator entegrasyonu): toplayıcı sitelerden zaten eşleştirilmiş fiyatları alır
+- Faz 13 sonrası Faz 10 aggregator kayıtlarını da hesaba katacak şekilde güncellenir
+
+**Faz 13 Test Kontrol Listesi:**
+- [ ] cimri.com scraper en az 50 ürün dönüyor mu?
+- [ ] akakce.com scraper en az 50 ürün dönüyor mu?
+- [ ] `cheapest_store` alanı doğru dolduruldu mu? (örn. "Trendyol", "Hepsiburada")
+- [ ] `store_count` alanı sıfırdan büyük mü?
+- [ ] `current_price` aggregator'daki en düşük fiyatı yansıtıyor mu?
+- [ ] Ürün detay sayfasında `cheapest_store` + `store_count` gösteriliyor mu?
+- [ ] Aggregator ürünleri E-ticaret listesinde görünüyor mu?
+- [ ] Bot koruması varsa Playwright fallback devreye giriyor mu?
+- [ ] Aggregator kaynağından gelen ürünler `source.scraper_type = 'aggregator'` ile işaretleniyor mu?
+
+---
+
 ## Ana Amaç
 
 Kullanıcının farklı e-ticaret, moda ve oyun sitelerini tek tek gezmesine gerek kalmadan, sistemin düzenli olarak ürünleri kontrol etmesi ve şu bilgileri sunması hedeflenir:
@@ -578,9 +658,9 @@ Sistem üç dikey üzerine kurulur. Her kaynak bir dikey'e aittir ve bu dikey ar
 
 | Dikey | Kod | Siteler |
 |-------|-----|---------|
-| E-ticaret | `ecommerce` | Teknosa, Hepsiburada, N11, Amazon TR, Trendyol |
+| E-ticaret | `ecommerce` | Teknosa, Hepsiburada, N11, Amazon TR, Trendyol, cimri.com *(Faz 13)*, akakce.com *(Faz 13)* |
 | Moda & Spor | `fashion` | Superstep, Sneaksup, Sneakersonline, Bershka, Pull&Bear, H&M TR |
-| Oyun İndirimleri | `gaming` | Steam, Eneba, Oyunfor, Bynogame |
+| Oyun İndirimleri | `gaming` | Steam, Epic Games, Eneba *(karşılaştırma)*, Bynogame *(karşılaştırma)* |
 
 Her vertical kendi filtreleriyle ayrı bir sayfa olarak gösterilir. Dashboard tüm verticals'ı özetler.
 
@@ -614,10 +694,16 @@ Her vertical kendi filtreleriyle ayrı bir sayfa olarak gösterilir. Dashboard t
 | Site | Durum | Not |
 |------|-------|-----|
 | Steam | ✅ Aktif | requests, çift URL (standart + ndl=1), MAX_PAGES=10 → ~820 oyun |
-| Oyunfor | ⬜ Faz 9 | Türkçe site, temiz yapı |
+| Epic Games | ⬜ Faz 9 | Public GraphQL API, auth gerektirmez, TR fiyatı |
 | Bynogame | ⬜ Faz 9 | Benzer yapı |
-| Eneba | ⬜ Faz 9 | Avrupa merkezli — rate limit ve bölge farkına dikkat |
-| Epic Games | ⬜ Faz 9 | Public JSON/GraphQL API, auth gerektirmez |
+| Eneba | ⬜ Faz 9 | Fiyat karşılaştırma ortağı — scraper değil, arama API'si ile lookup |
+
+### Fiyat Toplayıcıları (Aggregator)
+
+| Site | Durum | Not |
+|------|-------|-----|
+| cimri.com | ⬜ Faz 13 | E-ticaret aggregator, `scraper_type=aggregator`, `cheapest_store` + `store_count` alanları |
+| akakce.com | ⬜ Faz 13 | E-ticaret aggregator, benzer yapı; her ikisi de bot koruması denenecek |
 
 ---
 
@@ -731,7 +817,7 @@ Filtreler: site, marka, beden, renk, cinsiyet, kategori, min indirim oranı.
 
 ### Oyun İndirimleri
 
-Steam, Eneba, Oyunfor, Bynogame oyunları.
+Steam, Epic Games oyunları. Eneba ve Bynogame fiyat karşılaştırması detay sayfasında gösterilir.
 
 Filtreler: platform (PC/PS5/Xbox vb.), bölge (TR/EU/Global), min indirim oranı, fırsat skoru.
 
@@ -993,7 +1079,7 @@ app/scrapers/
 └── gaming/
     ├── steam_api.py      ← scraping değil, API
     ├── eneba.py
-    ├── oyunfor.py
+    ├── epic_games.py     ← GraphQL API
     └── bynogame.py
 ```
 
@@ -1036,10 +1122,11 @@ Bu bölüm hızlı referans için özet olarak tutulur. Asıl takip belgesi üst
 | 8 | Moda & Spor siteleri (Superstep ✓, Sneaksup ✓, Sneakersonline ✓ — Bershka/Pull&Bear/H&M bot koruması) | ✅ Tamamlandı |
 | 8.5 | Fashion sitelerine sayfalama (Superstep 10 sayfa→413, Sneakersonline scroll×8→180) | ✅ Tamamlandı |
 | 8.5 v2 | E-ticaret + oyun sitelerine sayfalama (N11 5 sayfa, Steam 10 sayfa × 2 URL →~820, Hepsiburada hazır) | ✅ Tamamlandı |
-| 9 | Oyun siteleri (Eneba, Oyunfor, Bynogame, Epic Games) + ITAD retroaktif fiyat geçmişi | ⬜ Bekliyor |
+| 9 | Epic Games scraper + Eneba/Bynogame fiyat karşılaştırma ortağı + CompetitorPrice modeli + ITAD | ✅ Tamamlandı (ITAD hariç) |
 | 10 | Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı, oyun hariç) | ⬜ Bekliyor |
 | 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) | ⬜ Bekliyor |
 | 12 | Ürün görselleri (yerel indirme + fallback) | ⬜ Bekliyor |
+| 13 | Fiyat toplayıcı entegrasyonu: cimri.com + akakce.com (aggregator scraper, store_count, cheapest_store) | ⬜ Bekliyor |
 
 ---
 
@@ -1161,7 +1248,7 @@ Scraper daha sonra bu yapıya bağlanacaktır.
 
 ## Kısa Proje Özeti
 
-Bu proje, Türkiye'deki e-ticaret (Teknosa, Hepsiburada, Trendyol vb.), moda/spor (Superstep, Bershka, H&M vb.) ve oyun platformlarını (Steam, Eneba, Oyunfor, Bynogame) takip eden; fiyat geçmişi tutan, gerçek indirimleri analiz eden ve kullanıcıya en iyi fırsatları gösteren kişisel bir Flask tabanlı fiyat takip sistemidir.
+Bu proje, Türkiye'deki e-ticaret (Teknosa, Hepsiburada, Trendyol vb.), moda/spor (Superstep, Bershka, H&M vb.) ve oyun platformlarını (Steam, Epic Games — Eneba/Bynogame fiyat karşılaştırması ile) takip eden; fiyat geçmişi tutan, gerçek indirimleri analiz eden ve kullanıcıya en iyi fırsatları gösteren kişisel bir Flask tabanlı fiyat takip sistemidir.
 
 Ana değer önerisi:
 

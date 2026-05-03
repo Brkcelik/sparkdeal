@@ -21,6 +21,7 @@ def get_scraper_class(source_name: str):
     from app.scrapers.fashion.bershka import BershkaScraper
     from app.scrapers.fashion.pullandbear import PullandbearScraper
     from app.scrapers.gaming.steam_api import SteamScraper
+    from app.scrapers.gaming.epic_games import EpicGamesScraper
 
     registry: dict[str, type] = {
         # E-ticaret
@@ -41,6 +42,8 @@ def get_scraper_class(source_name: str):
         'pullandbear':      PullandbearScraper,
         # Oyun
         'steam':            SteamScraper,
+        'epic_games':       EpicGamesScraper,
+        'epic':             EpicGamesScraper,
     }
 
     return registry.get(key)
@@ -51,5 +54,5 @@ def list_scrapers() -> list[str]:
     return [
         'teknosa', 'hepsiburada', 'n11', 'trendyol', 'amazon_tr',
         'superstep', 'hm', 'sneaksup', 'sneakersonline', 'bershka', 'pullandbear',
-        'steam',
+        'steam', 'epic_games',
     ]
