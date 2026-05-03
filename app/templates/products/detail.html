@@ -300,12 +300,54 @@
 </div>
 {% endif %}
 
+{% if itad_history %}
+<hr class="divider">
+<div class="section-header">
+  <span class="section-title">Tarihsel Veri (ITAD)</span>
+  <span class="section-count">{{ itad_history|length }} kayıt &mdash; Steam indirim geçmişi</span>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Tarih</th>
+        <th>Platform</th>
+        <th>İndirimli Fiyat</th>
+        <th>Normal Fiyat</th>
+        <th>İndirim</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in itad_history %}
+      <tr>
+        <td>{{ h.recorded_at.strftime('%d.%m.%Y') }}</td>
+        <td><span class="text-muted text-sm">{{ h.shop or 'Steam' }}</span></td>
+        <td><strong>{{ h.price | price(h.currency or 'USD') }}</strong></td>
+        <td>{{ h.regular_price | price(h.currency or 'USD') if h.regular_price else '—' }}</td>
+        <td>
+          {% if h.cut %}
+          <span class="badge badge-warning">%{{ h.cut }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if h.url %}
+          <a href="{{ h.url }}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px; padding:4px 8px;">Git</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 <!-- Price history table -->
 <hr class="divider">
 
 <div class="section-header">
   <span class="section-title">Fiyat Geçmişi</span>
-  <span class="section-count">{{ history|length }} kayıt &mdash; grafik Faz 10'da eklenecek</span>
+  <span class="section-count">{{ history|length }} kayıt &mdash; grafik Faz 11'de eklenecek</span>
 </div>
 
 {% if history %}

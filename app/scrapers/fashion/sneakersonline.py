@@ -67,13 +67,21 @@ class SneakersonlineScraper(PlaywrightBaseScraper):
         price_main = link.select_one('.price-main, .discount-price-main')
         current_price = old_price = None
         if price_main:
-            spans = [s.get_text(strip=True) for s in price_main.select('span') if s.get_text(strip=True)]
-            # İki fiyat varsa: ilk = eski, ikinci = yeni
-            if len(spans) >= 2:
-                old_price = self.normalize_price(spans[0])
-                current_price = self.normalize_price(spans[1])
-            elif len(spans) == 1:
-                current_price = self.normalize_price(spans[0])
+            # discount-percent span'larını ve % içeren span'ları filtrele;
+            # iç içe span'lardan kaynaklanan tekrarları kaldır (seen set ile)
+            seen: set[str] = set()
+            price_spans: list[str] = []
+            for s in price_main.select('span'):
+                cls = ' '.join(s.get('class') or [])
+                t = s.get_text(strip=True)
+                if t and 'discount-percent' not in cls and '%' not in t and t not in seen:
+                    price_spans.append(t)
+                    seen.add(t)
+            if len(price_spans) >= 2:
+                old_price = self.normalize_price(price_spans[0])
+                current_price = self.normalize_price(price_spans[1])
+            elif len(price_spans) == 1:
+                current_price = self.normalize_price(price_spans[0])
 
         if not current_price:
             return None

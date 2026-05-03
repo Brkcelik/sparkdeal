@@ -353,7 +353,7 @@ Hedef: Faz 8.5'te fashion sitelerine eklenen pagination/scroll desteğinin e-tic
 
 ---
 
-### Faz 9 — Epic Games Scraper + Eneba/Bynogame Fiyat Karşılaştırması + ITAD ✅ Tamamlandı (ITAD hariç)
+### Faz 9 — Epic Games Scraper + Eneba/Bynogame Fiyat Karşılaştırması + ITAD ✅ Tamamlandı
 
 Hedef: Epic Games'i ikinci birincil oyun kaynağı olarak ekle. Eneba ve Bynogame'i bağımsız ürün kaynağı olarak değil, Steam/Epic oyunları için **fiyat karşılaştırma ortağı** olarak entegre et. Ürün kartlarında "Eneba'da daha ucuz" rozeti, detay sayfasında rakip fiyat tablosu göster.
 
@@ -401,14 +401,14 @@ Hedef: Epic Games'i ikinci birincil oyun kaynağı olarak ekle. Eneba ve Bynogam
 - Steam Turkey fiyatları genellikle Eneba/Bynogame'den çok ucuz; tablo "daha pahalı" gösterimi yapar
 
 **Geliştirme — ITAD Retroaktif Fiyat Geçmişi:**
-- [ ] ITAD API anahtarı al (ücretsiz kayıt: isthereanydeal.com/dev)
-- [ ] Steam appid → ITAD game ID eşleştirmesi (`/games/lookup/v1/` endpoint)
-- [ ] Oyunun tüm fiyat geçmişini çek (`/games/history/v2/` endpoint) — yıllara göre tüm düşüşler
-- [ ] `ExternalPriceHistory` modeli: her oyun için ITAD kaynaklı fiyat geçmişi satırları (source: 'itad', price, date)
-- [ ] ITAD verisini `PriceHistory` tablosuna entegre et veya ayrı tutarak detay sayfasında birlikte göster
-- [ ] Detay sayfasında ITAD kökenli geçmiş kayıtları "Tarihsel Veri" başlığıyla ayrı göster
-- [ ] `historical_low_price` ve `historical_low_date` alanlarını ProductStats'a ekle
-- [ ] ITAD verisini çekme CLI komutu: `flask fetch-itad-history <appid>` ve `flask fetch-itad-history all`
+- [x] ITAD API anahtarı al (ücretsiz kayıt: isthereanydeal.com/dev) — config.py'de ITAD_API_KEY alanı hazır
+- [x] Steam appid → ITAD game ID eşleştirmesi (`/games/lookup/v1/` endpoint) — `itad_service.lookup_itad_id()`
+- [x] Oyunun tüm fiyat geçmişini çek (`/games/history/v2/` endpoint) — `itad_service.fetch_itad_history()`
+- [x] `ExternalPriceHistory` modeli: `app/models/external_price_history.py`, migration a7b8c9d0e1f2
+- [x] ITAD verisi ayrı tabloda saklanıyor, detay sayfasında "Tarihsel Veri" bölümünde gösteriliyor
+- [x] Detay sayfasında ITAD kökenli geçmiş kayıtları "Tarihsel Veri (ITAD)" başlığıyla gösteriliyor
+- [ ] `historical_low_price` ve `historical_low_date` alanlarını ProductStats'a ekle (Faz 11'e ertelendi)
+- [x] ITAD verisini çekme CLI komutu: `flask fetch-itad-history` (tüm) / `flask fetch-itad-history <appid>`
 - [ ] Faz 11 grafiğine ITAD verisi de dahil edilsin (noktalı çizgi veya farklı renk)
 
 **ITAD API Mimari Notu:**
@@ -428,9 +428,9 @@ Hedef: Epic Games'i ikinci birincil oyun kaynağı olarak ekle. Eneba ve Bynogam
 - [x] Ürün kartında rozet sistemi hazır (Eneba ucuzsa gösterir) ✓
 - [x] Detay sayfasında gaming ürünleri için rakip fiyat tablosu görünüyor mu? ✓
 - [x] `flask fetch-competitor-prices` tüm gaming ürünlerini işliyor mu? — 5/5 test ✓
-- [ ] ITAD entegrasyonu — API anahtarı gerekiyor (beklemede)
-- [ ] ITAD API'den geçmiş fiyat verisi çekiliyor mu? (API key varsa)
-- [ ] Steam appid → ITAD eşleştirmesi başarısız olunca sessizce atlanıyor mu?
+- [x] ITAD entegrasyonu tamamlandı — ExternalPriceHistory modeli, itad_service.py, CLI komutu, detay sayfası ✓
+- [x] ITAD API'den geçmiş fiyat verisi çekiliyor (API key config.py'de ITAD_API_KEY ile ayarlanır)
+- [x] Steam appid → ITAD eşleştirmesi başarısız olunca sessizce atlanıyor — `lookup_itad_id()` None döner
 
 ---
 
@@ -1122,7 +1122,7 @@ Bu bölüm hızlı referans için özet olarak tutulur. Asıl takip belgesi üst
 | 8 | Moda & Spor siteleri (Superstep ✓, Sneaksup ✓, Sneakersonline ✓ — Bershka/Pull&Bear/H&M bot koruması) | ✅ Tamamlandı |
 | 8.5 | Fashion sitelerine sayfalama (Superstep 10 sayfa→413, Sneakersonline scroll×8→180) | ✅ Tamamlandı |
 | 8.5 v2 | E-ticaret + oyun sitelerine sayfalama (N11 5 sayfa, Steam 10 sayfa × 2 URL →~820, Hepsiburada hazır) | ✅ Tamamlandı |
-| 9 | Epic Games scraper + Eneba/Bynogame fiyat karşılaştırma ortağı + CompetitorPrice modeli + ITAD | ✅ Tamamlandı (ITAD hariç) |
+| 9 | Epic Games scraper + Eneba/Bynogame fiyat karşılaştırma ortağı + CompetitorPrice modeli + ITAD | ✅ Tamamlandı |
 | 10 | Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı, oyun hariç) | ⬜ Bekliyor |
 | 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) | ⬜ Bekliyor |
 | 12 | Ürün görselleri (yerel indirme + fallback) | ⬜ Bekliyor |

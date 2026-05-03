@@ -181,3 +181,37 @@ def _register_cli(app):
         click.echo(
             f"  [OK] {result['updated']}/{result['total']} urun guncellendi"
         )
+
+    @app.cli.command('fetch-itad-history')
+    @click.argument('appid', default='all')
+    def fetch_itad_history_cmd(appid):
+        """Steam oyunlari icin ITAD tarihsel fiyat gecmisini cek.
+
+        Ornek: flask fetch-itad-history          (tum gaming urunleri)
+               flask fetch-itad-history 570      (Dota 2)
+        """
+        from app.services.itad_service import fetch_itad_history, fetch_all_itad_history
+        from app.services.itad_service import _get_api_key
+
+        if not _get_api_key():
+            click.echo(
+                '  [HATA] ITAD_API_KEY tanimli degil.\n'
+                '  config.py icine ITAD_API_KEY = "..." ekleyin\n'
+                '  veya ortam degiskeni olarak ayarlayin.\n'
+                '  Ucretsiz API key: https://isthereanydeal.com/dev/',
+                err=True,
+            )
+            return
+
+        if appid == 'all':
+            click.echo('[>] Tum gaming urunleri icin ITAD gecmisi cekiliyor...')
+            result = fetch_all_itad_history()
+            click.echo(f"  [OK] {result['updated']}/{result['total']} urun guncellendi")
+        else:
+            from app.models import Product
+            product = Product.query.filter_by(external_id=appid, vertical='gaming').first()
+            if not product:
+                click.echo(f'  [HATA] appid={appid} icin gaming urunu bulunamadi', err=True)
+                return
+            count = fetch_itad_history(product)
+            click.echo(f'  [OK] {product.name}: {count} ITAD kaydi eklendi')

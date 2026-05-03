@@ -131,10 +131,15 @@ def detail(product_id):
             .all()
         )
 
+    itad_history = []
+    if product.vertical == 'gaming':
+        itad_history = product.external_price_history.limit(200).all()
+
     return render_template(
         'products/detail.html',
         product=product,
         history=history,
         stats=stats,
         cross_site=cross_site,
+        itad_history=itad_history,
     )

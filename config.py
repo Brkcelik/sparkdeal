@@ -10,3 +10,5 @@ class Config:
         f'sqlite:///{os.path.join(BASE_DIR, "instance", "spark.db")}'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # ITAD API key — https://isthereanydeal.com/dev/ adresinden ücretsiz alın
+    ITAD_API_KEY = os.environ.get('ITAD_API_KEY', '')
