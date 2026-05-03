@@ -182,6 +182,38 @@ def _register_cli(app):
             f"  [OK] {result['updated']}/{result['total']} urun guncellendi"
         )
 
+    @app.cli.command('itad-auth')
+    def itad_auth_cmd():
+        """ITAD OAuth2 yetkilendirmesi — tek seferlik gerceklestirilir.
+
+        Tarayicida authorization URL'i acar, siz ITAD hesabinizla giris yapip
+        izin verirsiniz. Redirect URL'deki 'code=' parametresini kopyalayip
+        'flask itad-exchange CODE' komutuyla token'a cevirirsiniz.
+        """
+        from app.services.itad_service import get_auth_url
+        url = get_auth_url()
+        click.echo('\n[>] ITAD yetkilendirme URL:')
+        click.echo(f'  {url}')
+        click.echo()
+        click.echo('1. Yukardaki URL tarayicinizda acin.')
+        click.echo('2. ITAD hesabinizla giris yapin ve izin verin.')
+        click.echo('3. Redirect oldugunuzda URL\'deki "code=XXX" degerini kopyalayin.')
+        click.echo('4. Sonra: flask itad-exchange <code> komutunu calistirin.')
+
+    @app.cli.command('itad-exchange')
+    @click.argument('code')
+    def itad_exchange_cmd(code):
+        """Authorization code'u ITAD access token'a cevir."""
+        from app.services.itad_service import exchange_code
+        click.echo('[>] Token exchange yapiliyor...')
+        ok = exchange_code(code.strip())
+        if ok:
+            click.echo('  [OK] ITAD token alindi ve .env dosyasina kaydedildi.')
+            click.echo('  Simdi: flask fetch-itad-history')
+        else:
+            click.echo('  [HATA] Token exchange basarisiz. Kod suresi dolmus olabilir.', err=True)
+            click.echo('  Tekrar: flask itad-auth')
+
     @app.cli.command('fetch-itad-history')
     @click.argument('appid', default='all')
     def fetch_itad_history_cmd(appid):
@@ -190,15 +222,12 @@ def _register_cli(app):
         Ornek: flask fetch-itad-history          (tum gaming urunleri)
                flask fetch-itad-history 570      (Dota 2)
         """
-        from app.services.itad_service import fetch_itad_history, fetch_all_itad_history
-        from app.services.itad_service import _get_api_key
+        from app.services.itad_service import fetch_itad_history, fetch_all_itad_history, _has_credentials
 
-        if not _get_api_key():
+        if not _has_credentials():
             click.echo(
-                '  [HATA] ITAD_API_KEY tanimli degil.\n'
-                '  config.py icine ITAD_API_KEY = "..." ekleyin\n'
-                '  veya ortam degiskeni olarak ayarlayin.\n'
-                '  Ucretsiz API key: https://isthereanydeal.com/dev/',
+                '  [HATA] ITAD token bulunamadi.\n'
+                '  Once: flask itad-auth  ->  flask itad-exchange <code>',
                 err=True,
             )
             return
