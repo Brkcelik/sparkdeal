@@ -1135,6 +1135,11 @@ Genel görünüm:
 17. Yol haritasındaki tamamlanan maddeleri `[x]` ile işaretle — silme.
 18. Her önemli aşama tamamlandığında CLAUDE.md'yi güncelle.
 19. Faz bitince test kontrol listesini birlikte gözden geçir.
+20. Her faz tamamlandığında GitHub'a push et ve README'yi güncelle:
+    - README'deki yol haritası tablosunda fazı `✅` olarak işaretle.
+    - README'deki vertical/site tablolarını güncel duruma getir (aktif ✅ / pasif ❌).
+    - Commit mesajı: `Faz N tamamlandi: <kısa özet>`.
+    - `git add . && git commit -m "..." && git push` ile remote'a gönder.
 
 ---
 
