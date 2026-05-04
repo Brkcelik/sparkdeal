@@ -70,7 +70,7 @@ def _set_env(key: str, value: str) -> None:
 
 
 def _has_credentials() -> bool:
-    return bool(_get_env('ITAD_ACCESS_TOKEN') or _get_env('ITAD_REFRESH_TOKEN'))
+    return bool(_get_env('ITAD_API_KEY'))
 
 
 def get_auth_url() -> str:
