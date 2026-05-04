@@ -434,6 +434,39 @@ Hedef: Epic Games'i ikinci birincil oyun kaynağı olarak ekle. Eneba ve Bynogam
 
 ---
 
+### Faz 9.5 — ITAD OAuth Entegrasyonu ✅ Tamamlandı
+
+Hedef: ITAD API'sinin `client_credentials` yerine `authorization_code` OAuth akışı gerektirdiği tespit edildi; tam OAuth döngüsü uygulandı.
+
+**Bulgular:**
+- `oauth.isthereanydeal.com` Türkiye'den DNS çözülemiyor
+- ITAD API, `client_credentials` grant type'ı desteklemiyor
+- Doğru token endpoint: `https://isthereanydeal.com/oauth/token/` (trailing slash zorunlu)
+- Doğru grant type: `authorization_code` (kullanıcı onaylı OAuth akışı)
+
+**Geliştirme:**
+- [x] `flask itad-auth` CLI komutu: yetkilendirme URL'ini yazar
+- [x] `flask itad-exchange <code>` CLI komutu: kodu access+refresh token'a çevirir
+- [x] Token `.env` dosyasına kaydedilir (`ITAD_ACCESS_TOKEN`, `ITAD_REFRESH_TOKEN`, `ITAD_TOKEN_EXPIRY`)
+- [x] Access token expire olunca `refresh_token` ile otomatik yenileme
+- [x] Eski `?key=` API'ye fallback (token yoksa dener)
+- [x] `itad_service.py` tamamen yeniden yazıldı — OAuth akışı, token cache, `.env` okuma/yazma
+
+**Kullanım Akışı (tek seferlik):**
+```
+flask itad-auth            → URL al, tarayıcıda aç, ITAD hesabına giriş yap
+flask itad-exchange CODE   → code değerini buraya yaz
+flask fetch-itad-history   → tüm gaming ürünleri için geçmiş çek
+```
+
+**Faz 9.5 Test Kontrol Listesi:**
+- [x] `flask itad-auth` authorization URL üretiyor mu? ✓
+- [x] Token exchange `POST /oauth/token/` ile çalışıyor mu? (kullanıcı girişi gerekiyor)
+- [x] Refresh token ile otomatik yenileme destekleniyor mu? ✓ (kod hazır)
+- [x] Credentials `.env`'de, GitHub'a gitmeden korunuyor mu? ✓
+
+---
+
 ### Faz 10 — Çapraz Platform Fiyat Karşılaştırması
 
 Hedef: Aynı ürünün farklı platformlardaki fiyatlarını cimri.com / akakçe / epey tarzında yan yana göstermek (oyun vertical'ı hariç).
@@ -571,6 +604,224 @@ Hedef: cimri.com ve akakce.com gibi fiyat karşılaştırma toplayıcı siteleri
 - [ ] Aggregator ürünleri E-ticaret listesinde görünüyor mu?
 - [ ] Bot koruması varsa Playwright fallback devreye giriyor mu?
 - [ ] Aggregator kaynağından gelen ürünler `source.scraper_type = 'aggregator'` ile işaretleniyor mu?
+
+---
+
+### Faz 14 — Yeni Site Entegrasyonları (Moda & E-ticaret Genişlemesi)
+
+Hedef: Mevcut scraper altyapısını kullanarak yeni Türkiye e-ticaret ve moda sitelerini sisteme eklemek.
+
+**Öncelikli Adaylar:**
+
+| Site | Vertical | Tahmini Zorluk | Not |
+|------|----------|----------------|-----|
+| Boyner | Moda & E-ticaret | Orta | Geniş ürün yelpazesi (giyim, ev, elektronik) |
+| Morhipo | Moda | Orta | İndirim odaklı site — scraper için ideal |
+| LC Waikiki | Moda | Orta | Kendi altyapısı, indirim sayfaları mevcut |
+| Koton | Moda | Orta | Türkiye'nin büyük moda markası |
+| MediaMarkt TR | E-ticaret | Orta-Zor | Elektronik, Playwright gerekebilir |
+| Vatan Bilgisayar | E-ticaret | Kolay-Orta | Temiz HTML yapısı |
+| GittiGidiyor / eBay TR | E-ticaret | Zor | Marketplace; bot koruması |
+
+**Geliştirme:**
+- [ ] Boyner scraper (`app/scrapers/fashion/boyner.py` veya `ecommerce/boyner.py`) — vertical hem fashion hem ecommerce kapsar
+- [ ] Morhipo scraper (`app/scrapers/fashion/morhipo.py`) — indirim sayfaları
+- [ ] LC Waikiki scraper (`app/scrapers/fashion/lcwaikiki.py`)
+- [ ] Koton scraper (`app/scrapers/fashion/koton.py`)
+- [ ] MediaMarkt TR scraper (`app/scrapers/ecommerce/mediamarkt.py`)
+- [ ] Vatan Bilgisayar scraper (`app/scrapers/ecommerce/vatan.py`)
+- [ ] seed.py'e yeni Source + ScrapeTarget kayıtları
+- [ ] registry.py güncellemesi
+
+**Mimari Notlar:**
+- Her yeni scraper Playwright veya requests ile başlar; bot koruması varsa Playwright'e geçilir
+- Boyner gibi çift vertical site için `vertical='ecommerce'` tercih edilir (daha geniş kapsam)
+- Mevcut `PlaywrightBaseScraper` sayfalama altyapısı yeni scraper'larda kullanılır
+
+**Faz 14 Test Kontrol Listesi:**
+- [ ] Boyner scraper en az 30 ürün dönüyor mu?
+- [ ] Her yeni scraper hata verince uygulamayı çökertmiyor mu?
+- [ ] Yeni scraper'lar `vertical`, `category`, `brand` alanlarını doğru dolduruyor mu?
+- [ ] Ürün listesi sayfasında yeni kaynaklar filtrede görünüyor mu?
+
+---
+
+### Faz 15 — Tasarım Revizyonu
+
+Hedef: Mevcut koyu temalı arayüzü gözden geçirmek; kullanılabilirlik, mobil uyumluluk ve görsel tutarlılık açısından iyileştirmek. Bu faz büyük ölçüde **düşünme ve karar aşamasıdır** — kod yazmadan önce ne değiştirilmesi gerektiği belirlenir.
+
+**Değerlendirilecek Konular:**
+
+*Genel Tasarım:*
+- [ ] Mevcut bileşenler ve sayfa düzenleri gözden geçirilsin (sidebar, kartlar, tablolar)
+- [ ] Renk paleti, tipografi ve boşluk tutarlılığı kontrol edilsin
+- [ ] Aydınlık tema seçeneği eklenmeli mi? (toggle ile)
+- [ ] CSS framework değerlendirmesi: mevcut custom CSS yeterli mi, yoksa Tailwind / Bootstrap geçişi mi?
+
+*Mobil Uyumluluk:*
+- [ ] Mevcut responsive davranış test edilsin (sidebar mobilde nasıl görünüyor?)
+- [ ] Ürün kartları mobilde düzgün sıralanıyor mu?
+- [ ] Tablolar küçük ekranda kaydırılabilir mi?
+- [ ] Touch-friendly buton ve filtreler
+
+*Ürün Kartları:*
+- [ ] Görsel alanı (Faz 12 sonrası gerçek resimlerle) nasıl görünecek?
+- [ ] Rozet sistemi gözden geçirilsin (ATL, 30d, 90d — fazla bilgi var mı?)
+- [ ] Fiyat karşılaştırma rozeti (Eneba ucuzsa) görünürlüğü
+
+*Detay Sayfası:*
+- [ ] Fiyat grafiği (Faz 11) için alan planlanacak
+- [ ] ITAD tarihsel veri bölümü tasarımı
+- [ ] Rakip fiyat tablosu düzeni
+
+**Karar Verilmesi Gereken Sorular:**
+1. Framework değişikliği yapılacak mı? (mevcut CSS mi, Tailwind mi?)
+2. Aydınlık/koyu tema toggle'ı isteniliyor mu?
+3. Sidebar mobilde hamburger menü mi, alt navigation bar mı olacak?
+4. Ürün kartlarında önce görsel mi yoksa fiyat bilgisi mi ön plana çıkacak?
+
+**Faz 15 Test Kontrol Listesi:**
+- [ ] 320px / 768px / 1280px genişliklerde tüm sayfalar düzgün görünüyor mu?
+- [ ] Tasarım değişiklikleri mevcut fonksiyonelliği bozmadı mı?
+- [ ] Aydınlık/koyu tema toggle çalışıyor mu (eğer eklendiyse)?
+- [ ] Sayfa yükleme hızı tasarım değişikliğiyle gerilemedi mi?
+
+---
+
+### Faz 16 — Güvenlik ve Kurulum Sihirbazı
+
+Hedef: Projeyi başka birinin kurmasına hazır hale getirmek. Mevcut kişisel bilgiler ve hard-coded değerler temizlenerek, yeni kullanıcıdan gerekli bilgileri interaktif olarak alan bir kurulum akışı oluşturulur.
+
+**Yapılacaklar — Temizleme:**
+- [ ] `seed.py`'den kişisel veriler çıkarılsın (gerçek API key referansları, kişisel notlar)
+- [ ] `CLAUDE.md`'den paylaşılmaması gereken bilgiler temizlensin
+- [ ] `config.py`'de hard-coded değer kalmadığından emin olunur; tümü `.env`'e taşınır
+- [ ] `.env.example` dosyası oluşturulur (gerçek değerler olmadan şablon)
+- [ ] `README.md`'deki kurulum adımları `.env.example` üzerinden güncellenir
+
+**Yapılacaklar — Kurulum Sihirbazı:**
+- [ ] İlk çalıştırmada `instance/` klasörü yoksa kurulum sihirbazı tetiklenir
+- [ ] Sihirbaz şu bilgileri sorar:
+  - Uygulama secret key (otomatik üretilebilir)
+  - ITAD API credentials (isteğe bağlı — atlanabilir)
+  - Varsayılan scrape interval (dakika cinsinden)
+  - Hangi vertical'lar aktif olsun? (ecommerce / fashion / gaming seçimi)
+- [ ] Sihirbaz çıktısını `instance/config.local.py` veya `.env`'e yazar
+- [ ] `flask setup` CLI komutu olarak da tetiklenebilir
+
+**Yapılacaklar — Güvenlik:**
+- [ ] Flask `SECRET_KEY` varsayılan değeri kaldırılır; üretilmezse uyarı verilir
+- [ ] Debug modu production'da kapalı kalacak şekilde kontrol eklenir
+- [ ] CSRF koruması (`flask-wtf`) formlar için değerlendirilir (Faz 17 öncesi gerekli)
+- [ ] Rate limiting değerlendirmesi (scraper endpoint'lerine aşırı istek koruması)
+
+**Faz 16 Test Kontrol Listesi:**
+- [ ] `.env.example` dosyası gerçek credential içermiyor mu?
+- [ ] Sihirbaz olmadan (boş `.env` ile) uygulama anlaşılır hata veriyor mu?
+- [ ] `flask setup` komutu soruları soruyor ve değerleri yazıyor mu?
+- [ ] `config.py`'de hard-coded secret key kalmadı mı?
+
+---
+
+### Faz 17 — Çoklu Kullanıcı ve Admin Paneli
+
+Hedef: Tek kullanıcılı yapıdan çoklu kullanıcıya geçiş. Her kullanıcı kendi alarm listesini yönetir; admin kullanıcı kaynakları, scraper'ları ve sistemi yönetir. Bu faz halka açık bir sistem yapmak istenirse zorunlu önkoşuldur.
+
+**Kullanıcı Sistemi:**
+- [ ] `User` modeli: id, username, email, password_hash, role, is_active, created_at (migration)
+- [ ] Flask-Login entegrasyonu (oturum yönetimi)
+- [ ] Kayıt sayfası (`/register`) — opsiyonel: sadece admin kayıt açabilir
+- [ ] Giriş/çıkış sayfaları (`/login`, `/logout`)
+- [ ] Şifre değiştirme (`/profile`)
+- [ ] Role sistemi: `admin` / `user` (RBAC — basit iki seviye)
+- [ ] `PriceAlert` modeline `user_id` eklenir — her alarm bir kullanıcıya aittir
+- [ ] Mevcut alarmlar admin kullanıcıya aktarılır
+
+**Admin Paneli (`/admin`):**
+- [ ] Kullanıcı yönetimi: listele, aktif/pasif yap, admin yetki ver
+- [ ] Kaynak yönetimi: scraper'ları aktif/pasif yap, interval ayarla (mevcut `/sources` genişletilir)
+- [ ] Sistem durumu: son scrape zamanları, hata sayıları, ürün sayıları
+- [ ] Manuel scrape tetikleme (mevcut buton admin paneline taşınır)
+- [ ] Ayarlar: ITAD API credentials, bildirim ayarları (admin paneli üzerinden)
+
+**Mimari Kararlar:**
+- Flask-Login veya Flask-Security — ikisi de değerlendirilebilir
+- Şifre hash: `werkzeug.security` (zaten bağımlılıkta mevcut)
+- SQLite kullanımı devam edebilir; çok kullanıcılı için WAL modu yeterli
+- Admin paneli için ayrı blueprint: `app/routes/admin.py`
+- Jinja2 `current_user` entegrasyonu ile şablon güncellemeleri
+
+**Faz 17 Test Kontrol Listesi:**
+- [ ] Admin olmayan kullanıcı admin sayfalarına erişemiyor mu?
+- [ ] Her kullanıcı yalnızca kendi alarmlarını görüyor mu?
+- [ ] Giriş yapmadan ürün listesi görüntülenebiliyor mu? (public mı, private mı — kararlaştırılacak)
+- [ ] Şifre hash doğru çalışıyor mu?
+- [ ] Flask-Login session yönetimi Playwright scraper thread'leriyle çakışmıyor mu?
+
+---
+
+### Faz 18 — Halka Açılım Hazırlığı (Opsiyonel)
+
+Hedef: Sistemi yalnızca kişisel kullanımın ötesine taşımak için gerekli teknik altyapıyı kurmak. **Bu faz kararlaştırılmış değil — ne zaman ve nasıl yapılacağı düşünülecek.**
+
+**Değerlendirilecek Sorular:**
+1. Hosting nerede olacak? (Heroku, Railway, DigitalOcean, VPS, self-hosted?)
+2. SQLite → PostgreSQL geçişi ne zaman? (Flask-Migrate ile geçiş kolay ama veri migration planlanmalı)
+3. Kullanıcı kaydı açık mı yoksa davetiye ile mi?
+4. Rate limiting scraper endpoint'lerinde gerekli mi?
+5. Domain ve SSL sertifikası
+6. Playwright headless scraper'lar cloud'da çalışabiliyor mu? (memory/CPU limitleri)
+
+**Teknik Hazırlıklar (karar verilirse):**
+- [ ] PostgreSQL geçişi: `DATABASE_URL` env var, `psycopg2` bağımlılık, migration test
+- [ ] Docker Compose dosyası (web + scraper worker ayrımı değerlendirilebilir)
+- [ ] `gunicorn` veya `waitress` WSGI server (development server production'da kullanılmaz)
+- [ ] Ortam değişkenleri tam olarak belgelenir (`.env.example` güncel tutulur)
+- [ ] Hata izleme: Sentry entegrasyonu değerlendirilebilir
+- [ ] Yedekleme: SQLite için periyodik `.db` kopyası veya `pg_dump`
+- [ ] Public API: diğer uygulamaların fiyat verisi çekebileceği REST endpoint'leri (opsiyonel)
+
+**Faz 18 Test Kontrol Listesi:**
+- [ ] Production ortamında debug=False ile uygulama çalışıyor mu?
+- [ ] Tüm environment variable'lar `.env.example`'da belgelenmiş mi?
+- [ ] Playwright scraper'lar seçilen hosting'de çalışabiliyor mu?
+- [ ] Veritabanı yedekleme planı var mı?
+
+---
+
+### Faz 19 — Mobil Uygulama
+
+Hedef: SparkDeal'ı akıllı telefonda kullanılabilir hale getirmek. Bildirim desteği ile fiyat düşüşlerini anlık olarak almak.
+
+**Yaklaşım Seçenekleri (karar verilecek):**
+
+| Yaklaşım | Avantaj | Dezavantaj |
+|----------|---------|------------|
+| PWA (Progressive Web App) | Mevcut Flask üzerine eklenir, mağaza gerekmez | iOS'ta sınırlı push bildirim |
+| React Native | Native performans, iOS + Android | Ayrı frontend kodbase, öğrenme eğrisi |
+| Flutter | Native performans, tek kod base | Dart öğrenme eğrisi |
+| Capacitor (mevcut web → native) | Mevcut HTML/CSS/JS kullanılır | Performans sınırlı |
+
+**Önerilen Yaklaşım: PWA + Service Worker**
+- Mevcut Flask şablonları üzerine inşa edilir
+- `manifest.json` + `service-worker.js` eklenir
+- Web Push API ile bildirim desteği
+- iOS için sınırlamalar kabul edilir (veya React Native'e geçilir)
+
+**Geliştirme (PWA yaklaşımı seçilirse):**
+- [ ] `manifest.json` — uygulama adı, ikon, tema rengi, start URL
+- [ ] `service-worker.js` — offline cache, push bildirim altyapısı
+- [ ] Web Push API entegrasyonu — alarm tetiklenince push bildirim gönder
+- [ ] `PushSubscription` modeli — kullanıcı başına push endpoint sakla
+- [ ] `/static/icons/` — farklı çözünürlüklerde uygulama ikon seti
+- [ ] "Ana Ekrana Ekle" prompt'u (install banner)
+- [ ] Mobile-first sayfa düzeni (Faz 15 tamamlandıysa hazır olur)
+
+**Faz 19 Test Kontrol Listesi:**
+- [ ] Chrome ve Safari'de "Ana Ekrana Ekle" çalışıyor mu?
+- [ ] Fiyat alarmı tetiklendiğinde push bildirim geliyor mu?
+- [ ] Offline durumda son yüklenen sayfalar görüntülenebiliyor mu?
+- [ ] 60fps scroll performansı mobilde sağlanıyor mu?
 
 ---
 
@@ -1123,10 +1374,17 @@ Bu bölüm hızlı referans için özet olarak tutulur. Asıl takip belgesi üst
 | 8.5 | Fashion sitelerine sayfalama (Superstep 10 sayfa→413, Sneakersonline scroll×8→180) | ✅ Tamamlandı |
 | 8.5 v2 | E-ticaret + oyun sitelerine sayfalama (N11 5 sayfa, Steam 10 sayfa × 2 URL →~820, Hepsiburada hazır) | ✅ Tamamlandı |
 | 9 | Epic Games scraper + Eneba/Bynogame fiyat karşılaştırma ortağı + CompetitorPrice modeli + ITAD | ✅ Tamamlandı |
+| 9.5 | ITAD OAuth akışı (authorization_code, token exchange, auto-refresh) | ✅ Tamamlandı |
 | 10 | Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı, oyun hariç) | ⬜ Bekliyor |
 | 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) | ⬜ Bekliyor |
 | 12 | Ürün görselleri (yerel indirme + fallback) | ⬜ Bekliyor |
 | 13 | Fiyat toplayıcı entegrasyonu: cimri.com + akakce.com (aggregator scraper, store_count, cheapest_store) | ⬜ Bekliyor |
+| 14 | Yeni site entegrasyonları: Boyner, Morhipo, LC Waikiki, Koton, MediaMarkt TR, Vatan | ⬜ Bekliyor |
+| 15 | Tasarım revizyonu: responsive, mobil uyumluluk, tema seçeneği, UX iyileştirme | ⬜ Düşünme aşaması |
+| 16 | Güvenlik ve kurulum sihirbazı: kişisel veri temizleme, .env.example, setup wizard | ⬜ Bekliyor |
+| 17 | Çoklu kullanıcı + admin paneli: Flask-Login, RBAC, kullanıcı yönetimi, ayarlar | ⬜ Bekliyor |
+| 18 | Halka açılım hazırlığı: PostgreSQL, Docker, hosting, rate limiting (opsiyonel) | ⬜ Düşünme aşaması |
+| 19 | Mobil uygulama: PWA + push bildirim veya React Native (karar verilecek) | ⬜ Bekliyor |
 
 ---
 
