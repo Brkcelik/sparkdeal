@@ -149,6 +149,7 @@ def run_scrape(source_name: str) -> ScrapeRun:
     total_updated = 0
     error_messages = []
     updated_products = []
+    new_products = []
 
     for target in targets:
         try:
@@ -169,6 +170,7 @@ def run_scrape(source_name: str) -> ScrapeRun:
                     record_price(product, data)
                 if created:
                     total_new += 1
+                    new_products.append(product)
                 else:
                     total_updated += 1
                 updated_products.append(product)
@@ -210,6 +212,23 @@ def run_scrape(source_name: str) -> ScrapeRun:
                 logger.info("%s: %d alarm tetiklendi", source_name, triggered)
         except Exception as exc:
             logger.error("Alarm kontrol hatası (%s): %s", source_name, exc)
+
+        # Yeni gaming ürünleri için ITAD geçmişi çek
+        gaming_new = [p for p in new_products if p.vertical == 'gaming' and p.external_id]
+        if gaming_new:
+            try:
+                from app.services.itad_service import fetch_itad_history, _has_credentials
+                if _has_credentials():
+                    fetched = 0
+                    for p in gaming_new:
+                        count = fetch_itad_history(p)
+                        if count:
+                            fetched += 1
+                    if fetched:
+                        db.session.commit()
+                    logger.info("%s: %d yeni gaming urunu icin ITAD gecmisi cekidi", source_name, fetched)
+            except Exception as exc:
+                logger.error("ITAD fetch hatası (%s): %s", source_name, exc)
 
     logger.info(
         "%s taraması tamamlandı: %d bulundu, %d yeni, %d güncellendi",
