@@ -59,6 +59,7 @@ def create_app(config_class=Config):
     from app.routes.sources import bp as sources_bp
     from app.routes.scrape_runs import bp as scrape_runs_bp
     from app.routes.alerts import bp as alerts_bp
+    from app.routes.compare import bp as compare_bp
 
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(products_bp)
@@ -66,6 +67,7 @@ def create_app(config_class=Config):
     app.register_blueprint(sources_bp)
     app.register_blueprint(scrape_runs_bp)
     app.register_blueprint(alerts_bp)
+    app.register_blueprint(compare_bp)
 
     _register_cli(app)
     _start_scheduler(app)

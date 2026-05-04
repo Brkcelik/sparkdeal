@@ -9,6 +9,7 @@ Türkiye'deki e-ticaret, moda/spor ve oyun platformlarını takip eden; fiyat ge
 - **Fırsat skoru** — Anlık indirime değil, geçmiş veriye dayalı analiz
 - **En düşük fiyat tespiti** — 7 / 30 / 90 / 180 günlük en düşük ve ortalama
 - **ITAD entegrasyonu** — Steam oyunları için yıllara geriye giden tarihsel fiyat geçmişi
+- **Çapraz platform karşılaştırması** — Aynı ürünü farklı sitelerde ara, en ucuz platformu göster (/compare)
 - **Rakip fiyat karşılaştırması** — Eneba ve Bynogame fiyatları gaming ürünlerinde gösterilir
 - **Alarm sistemi** — Hedef fiyat, tüm zamanların en düşüğü, kelime ve kategori alarmları
 - **Otomatik tarama** — APScheduler ile periyodik scraping
@@ -83,7 +84,7 @@ flask fetch-itad-history     # Tüm oyunlar için geçmiş çekin
 | 8.5v2 | E-ticaret + oyun sitelerine sayfalama | ✅ |
 | 9 | Epic Games + Eneba/Bynogame karşılaştırma + ITAD | ✅ |
 | 9.5 | ITAD OAuth akışı (authorization_code, token yönetimi) | ✅ |
-| 10 | Çapraz platform fiyat karşılaştırması | ⬜ |
+| 10 | Çapraz platform fiyat karşılaştırması (/compare, Jaccard gruplama) | ✅ |
 | 11 | Chart.js fiyat geçmişi grafikleri | ⬜ |
 | 12 | Ürün görselleri (yerel indirme) | ⬜ |
 | 13 | Fiyat toplayıcı: cimri.com + akakce.com | ⬜ |

@@ -63,6 +63,12 @@
           Fırsatlar
         </a>
 
+        <a href="{{ url_for('compare.index') }}"
+           class="nav-item {% if request.endpoint == 'compare.index' %}active{% endif %}">
+          <span class="nav-dot"></span>
+          Fiyat Karşılaştır
+        </a>
+
         <a href="{{ url_for('alerts.list') }}"
            class="nav-item {% if request.endpoint and request.endpoint.startswith('alerts.') %}active{% endif %}">
           <span class="nav-dot"></span>
@@ -89,7 +95,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      SparkDeal &middot; Faz 5
+      SparkDeal &middot; Faz 10
     </div>
   </aside>
 

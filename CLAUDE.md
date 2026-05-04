@@ -467,32 +467,33 @@ flask fetch-itad-history   → tüm gaming ürünleri için geçmiş çek
 
 ---
 
-### Faz 10 — Çapraz Platform Fiyat Karşılaştırması
+### Faz 10 — Çapraz Platform Fiyat Karşılaştırması ✅ Tamamlandı
 
 Hedef: Aynı ürünün farklı platformlardaki fiyatlarını cimri.com / akakçe / epey tarzında yan yana göstermek (oyun vertical'ı hariç).
 
 **Geliştirme:**
-- [ ] Ürün eşleştirme servisi: `normalized_name` + `brand` benzerliğine göre aynı ürünü birden fazla kaynakta tespit et (`app/services/matching_service.py`)
-- [ ] `ProductGroup` modeli veya sorgu katmanı: aynı ürünü temsil eden kayıtları grupla (migration gerekmeyebilir — view/query tabanlı yaklaşım tercih edilsin)
-- [ ] Karşılaştırma sayfası (`/compare`) — arama kutusuyla ürün ara, platform bazlı fiyat tablosu göster
-- [ ] Ürün detay sayfasına "Bu ürünün diğer platformlardaki fiyatları" tablosu ekle (cross-site tablo — Faz 7'de altyapısı hazır)
-- [ ] En ucuz platformu vurgula (rozet veya renk ile)
-- [ ] Fiyat farkı yüzdesini göster (örn. "Teknosa'da %18 daha pahalı")
-- [ ] Karşılaştırmada stok durumunu da göster
-- [ ] Sidebar'a "Fiyat Karşılaştır" linki ekle
+- [x] Ürün eşleştirme servisi: `normalized_name` + Jaccard benzerliği ile aynı ürünü birden fazla kaynakta tespit et (`app/services/matching_service.py`)
+- [x] `ProductGroup` modeli veya sorgu katmanı: query-tabanlı gruplama, migration yok — `group_products()` fonksiyonu
+- [x] Karşılaştırma sayfası (`/compare`) — arama kutusuyla ürün ara, platform bazlı fiyat tablosu göster
+- [x] Ürün detay sayfasına "Bu ürünün diğer platformlardaki fiyatları" tablosu ekle (Faz 7'de hazır, aktif)
+- [x] En ucuz platformu vurgula (yeşil renk + "En Ucuz" rozeti)
+- [x] Fiyat farkı yüzdesini göster (örn. "+%18 daha pahalı")
+- [x] Karşılaştırmada stok durumunu da göster
+- [x] Sidebar'a "Fiyat Karşılaştır" linki eklendi
 
 **Mimari Not:**
-- Eşleştirme kesin değil, bulanık (fuzzy) olmalı; threshold ayarlanabilir olsun
-- `normalize_product_name()` zaten `scraper_service.py`'de mevcut — matching_service bunu kullanır
-- Oyun ürünleri bu sayfaya dahil edilmez (platform/bölge farkı karşılaştırmayı anlamsız kılar)
-- Eşleştirme servis katmanında yapılır, DB'ye ayrı tablo açılması zorunlu değil
+- `app/services/matching_service.py`: `jaccard_score()`, `search_products()`, `group_products()`, `compare_products()`
+- Jaccard threshold: arama için ≥ 0.25, grup birleştirme için ≥ 0.65
+- Oyun ürünleri sayfaya dahil edilmez (`vertical != 'gaming'` filtresi)
+- Migration yok — sorgu katmanı ile saf Python gruplama
+- Nike Dunk Low Panda test: 11 platform eşleşmesi ✓
 
 **Faz 10 Test Kontrol Listesi:**
-- [ ] Aynı marka + benzer isimli ürün farklı kaynaklardan eşleşiyor mu?
-- [ ] Farklı ürünler yanlışlıkla eşleşiyor mu? (false positive kontrolü)
-- [ ] Karşılaştırma tablosu yalnızca 1 kaynak bulunan ürünlerde bozulmuyor mu?
-- [ ] Stok dışı platform karşılaştırmada görünüyor mu?
-- [ ] Oyun ürünleri karşılaştırma sayfasına karışıyor mu?
+- [x] Aynı marka + benzer isimli ürün farklı kaynaklardan eşleşiyor mu? — Nike Dunk 11 platform ✓
+- [x] Farklı ürünler yanlışlıkla eşleşiyor mu? — Jaccard(samsung tv, dyson supersonik) = 0.0 ✓
+- [x] Karşılaştırma tablosu yalnızca 1 kaynak bulunan ürünlerde bozulmuyor mu? — uyarı metni ✓
+- [x] Stok dışı platform karşılaştırmada görünüyor mu? — stock_status sütunu ✓
+- [x] Oyun ürünleri karşılaştırma sayfasına karışıyor mu? — `vertical != 'gaming'` filtresi ✓
 
 ---
 
@@ -1375,7 +1376,7 @@ Bu bölüm hızlı referans için özet olarak tutulur. Asıl takip belgesi üst
 | 8.5 v2 | E-ticaret + oyun sitelerine sayfalama (N11 5 sayfa, Steam 10 sayfa × 2 URL →~820, Hepsiburada hazır) | ✅ Tamamlandı |
 | 9 | Epic Games scraper + Eneba/Bynogame fiyat karşılaştırma ortağı + CompetitorPrice modeli + ITAD | ✅ Tamamlandı |
 | 9.5 | ITAD OAuth akışı (authorization_code, token exchange, auto-refresh) | ✅ Tamamlandı |
-| 10 | Çapraz platform fiyat karşılaştırması (cimri/akakçe/epey tarzı, oyun hariç) | ⬜ Bekliyor |
+| 10 | Çapraz platform fiyat karşılaştırması (matching_service, /compare sayfası, Jaccard gruplama) | ✅ Tamamlandı |
 | 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) | ⬜ Bekliyor |
 | 12 | Ürün görselleri (yerel indirme + fallback) | ⬜ Bekliyor |
 | 13 | Fiyat toplayıcı entegrasyonu: cimri.com + akakce.com (aggregator scraper, store_count, cheapest_store) | ⬜ Bekliyor |

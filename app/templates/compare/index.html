@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Fiyat Karşılaştır{% endblock %}
+{% block page_title %}Fiyat Karşılaştır{% endblock %}
+{% block page_sub %}
+  {% if query %}
+    "{{ query }}" için {{ groups|length }} ürün grubu, {{ total_products }} eşleşme
+  {% else %}
+    Aynı ürünü farklı sitelerde karşılaştır
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Arama kutusu -->
+<form method="GET" action="{{ url_for('compare.index') }}" style="margin-bottom: 28px;">
+  <div class="filter-bar" style="align-items: flex-end;">
+    <div class="filter-group" style="flex: 1; min-width: 260px;">
+      <label class="filter-label">Ürün Adı ile Ara</label>
+      <input
+        class="input"
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="Örn: Nike Air Max, Samsung TV, Dyson..."
+        autofocus
+      >
+    </div>
+    <div class="filter-group">
+      <button type="submit" class="btn btn-primary">Karşılaştır</button>
+    </div>
+  </div>
+</form>
+
+{% if query and not groups %}
+<div class="empty-state">
+  <div class="empty-state-title">Eşleşen ürün bulunamadı</div>
+  <div class="empty-state-sub">
+    "{{ query }}" için farklı anahtar kelimeler deneyin. Oyun ürünleri bu sayfada gösterilmez.
+  </div>
+</div>
+
+{% elif not query %}
+<div class="empty-state">
+  <div class="empty-state-title">Ürün adı girin</div>
+  <div class="empty-state-sub">
+    Aynı ürünü birden fazla sitede bularak en ucuz platformu gösteririz.<br>
+    Oyun indirimleri bu sayfaya dahil değildir.
+  </div>
+</div>
+
+{% else %}
+
+{% if multi_platform_count > 0 %}
+<div class="flash-message flash-success" style="margin-bottom: 16px;">
+  {{ multi_platform_count }} ürün grubu birden fazla platformda bulunuyor — fiyat farkları aşağıda görünüyor.
+</div>
+{% endif %}
+
+{% for group in groups %}
+{% set cheapest = group[0] %}
+<div class="compare-group" style="margin-bottom: 32px;">
+
+  <!-- Grup başlığı -->
+  <div class="section-header" style="margin-bottom: 8px;">
+    <span class="section-title" style="font-size: 14px;">
+      {{ cheapest.name[:80] }}{% if cheapest.name|length > 80 %}…{% endif %}
+    </span>
+    <span class="section-count">{{ group|length }} platform</span>
+    {% if group|length > 1 %}
+    <span class="badge badge-success" style="margin-left: 8px;">Karşılaştırma mevcut</span>
+    {% endif %}
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 120px;">Platform</th>
+          <th>Ürün Adı</th>
+          <th style="width: 160px;">Fiyat</th>
+          <th style="width: 80px;">İndirim</th>
+          <th style="width: 80px;">Stok</th>
+          <th style="width: 60px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in group %}
+        <tr {% if loop.first %}style="background: rgba(var(--success-rgb, 34,197,94), 0.06);"{% endif %}>
+
+          <!-- Platform rozeti -->
+          <td>
+            <span class="product-source-badge {{ p.vertical }}">
+              {{ p.source.name }}
+            </span>
+            {% if loop.first and group|length > 1 %}
+            <br><span class="badge badge-success" style="margin-top:4px; font-size:10px;">En Ucuz</span>
+            {% endif %}
+          </td>
+
+          <!-- Ürün adı -->
+          <td class="text-sm">
+            {{ p.name[:65] }}{% if p.name|length > 65 %}…{% endif %}
+          </td>
+
+          <!-- Fiyat + fark -->
+          <td>
+            {% if loop.first %}
+              <strong style="color: var(--success);">
+                {{ p.current_price | price(p.currency or 'TRY') }}
+              </strong>
+            {% else %}
+              <strong>{{ p.current_price | price(p.currency or 'TRY') }}</strong>
+              {% if cheapest.current_price and cheapest.current_price > 0 %}
+              {% set diff_pct = ((p.current_price - cheapest.current_price) / cheapest.current_price * 100) | int %}
+              {% if diff_pct > 0 %}
+              <span class="text-muted text-sm" style="margin-left: 4px; color: var(--danger, #ef4444);">
+                +%{{ diff_pct }} daha pahalı
+              </span>
+              {% endif %}
+              {% endif %}
+            {% endif %}
+          </td>
+
+          <!-- İndirim oranı -->
+          <td>
+            {% if p.discount_percent %}
+            <span class="badge badge-warning">%{{ p.discount_percent | int }}</span>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+
+          <!-- Stok -->
+          <td>
+            <span class="stock-dot {{ p.stock_status }}"></span>
+            {% if p.stock_status == 'in_stock' %}
+            <span class="text-success text-sm">Var</span>
+            {% else %}
+            <span class="text-muted text-sm">—</span>
+            {% endif %}
+          </td>
+
+          <!-- Detay / site linki -->
+          <td>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <a href="{{ url_for('products.detail', product_id=p.id) }}"
+                 class="btn btn-ghost" style="font-size: 11px; padding: 4px 8px;">
+                Detay
+              </a>
+              {% if p.product_url %}
+              <a href="{{ p.product_url }}" target="_blank" rel="noopener"
+                 class="btn btn-ghost" style="font-size: 11px; padding: 4px 8px;"
+                 title="Siteye git">↗</a>
+              {% endif %}
+            </div>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tek platformlu grup için mini uyarı -->
+  {% if group|length == 1 %}
+  <p class="text-muted text-sm" style="margin-top: 4px; margin-left: 4px;">
+    Bu ürün yalnızca 1 platformda bulundu — fiyat karşılaştırması için birden fazla site gerekir.
+  </p>
+  {% endif %}
+
+</div>
+{% endfor %}
+
+{% endif %}
+
+{% endblock %}
