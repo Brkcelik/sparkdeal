@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 from app import db
-from app.models import Product, Source, ProductStats, ScrapeRun
+from app.models import Product, Source, ProductStats, ScrapeRun, PriceHistory
 
 bp = Blueprint('dashboard', __name__)
 
@@ -67,6 +67,21 @@ def index():
         .all()
     )
 
+    # Dashboard sparkline: top deals + biggest discounts için son fiyat noktaları
+    sparkline_data = {}
+    all_dash_products = {p.id: p for p in top_deals + biggest_discounts}
+    for pid in all_dash_products:
+        pts = (
+            PriceHistory.query
+            .filter_by(product_id=pid)
+            .order_by(PriceHistory.recorded_at.asc())
+            .limit(20)
+            .all()
+        )
+        prices = [round(h.price, 2) for h in pts if h.price]
+        if len(prices) >= 2:
+            sparkline_data[pid] = prices
+
     stats = {
         'total_products': total_products,
         'on_sale': on_sale,
@@ -85,4 +100,5 @@ def index():
         sources=sources,
         errored_sources=errored_sources,
         recent_errors=recent_errors,
+        sparkline_data=sparkline_data,
     )

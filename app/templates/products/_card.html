@@ -42,6 +42,12 @@
     </div>
   </div>
 
+  {% if sparkline_data is defined and product.id in sparkline_data %}
+  <div style="padding:0 12px 4px; line-height:0;">
+    <canvas id="sparkline-{{ product.id }}" width="200" height="36" style="width:100%; height:36px;"></canvas>
+  </div>
+  {% endif %}
+
   <div class="product-card-footer">
     <span class="deal-score-pill {{ product.score_tier }}">
       {{ product.deal_score | int }} puan

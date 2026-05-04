@@ -300,58 +300,21 @@
 </div>
 {% endif %}
 
-{% if itad_history %}
+<!-- Fiyat Geçmişi Grafiği -->
 <hr class="divider">
 <div class="section-header">
-  <span class="section-title">Tarihsel Veri (ITAD)</span>
-  <span class="section-count">{{ itad_history|length }} kayıt &mdash; Steam indirim geçmişi</span>
+  <span class="section-title">Fiyat Geçmişi</span>
+  <span class="section-count">{{ history|length }} kayıt</span>
 </div>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Tarih</th>
-        <th>Platform</th>
-        <th>İndirimli Fiyat</th>
-        <th>Normal Fiyat</th>
-        <th>İndirim</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for h in itad_history %}
-      <tr>
-        <td>{{ h.recorded_at.strftime('%d.%m.%Y') }}</td>
-        <td><span class="text-muted text-sm">{{ h.shop or 'Steam' }}</span></td>
-        <td><strong>{{ h.price | price(h.currency or 'USD') }}</strong></td>
-        <td>{{ h.regular_price | price(h.currency or 'USD') if h.regular_price else '—' }}</td>
-        <td>
-          {% if h.cut %}
-          <span class="badge badge-warning">%{{ h.cut }}</span>
-          {% else %}—{% endif %}
-        </td>
-        <td>
-          {% if h.url %}
-          <a href="{{ h.url }}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px; padding:4px 8px;">Git</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+{% if chart_labels %}
+<div style="position:relative; height:280px; margin-bottom:8px; background:var(--surface); border-radius:8px; padding:16px;">
+  <canvas id="priceChart"></canvas>
 </div>
 {% endif %}
 
-<!-- Price history table -->
-<hr class="divider">
-
-<div class="section-header">
-  <span class="section-title">Fiyat Geçmişi</span>
-  <span class="section-count">{{ history|length }} kayıt &mdash; grafik Faz 11'de eklenecek</span>
-</div>
-
 {% if history %}
-<div class="table-wrap">
+<div class="table-wrap" style="margin-top:16px;">
   <table>
     <thead>
       <tr>
@@ -405,4 +368,183 @@
 </div>
 {% endif %}
 
+{% if itad_history %}
+<hr class="divider">
+<div class="section-header">
+  <span class="section-title">Tarihsel Veri (ITAD)</span>
+  <span class="section-count">{{ itad_history|length }} kayıt &mdash; Steam indirim geçmişi</span>
+</div>
+
+{% if itad_labels %}
+<div style="position:relative; height:220px; margin-bottom:8px; background:var(--surface); border-radius:8px; padding:16px;">
+  <canvas id="itadChart"></canvas>
+</div>
+{% endif %}
+
+<div class="table-wrap" style="margin-top:16px;">
+  <table>
+    <thead>
+      <tr>
+        <th>Tarih</th>
+        <th>Platform</th>
+        <th>İndirimli Fiyat</th>
+        <th>Normal Fiyat</th>
+        <th>İndirim</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in itad_history %}
+      <tr>
+        <td>{{ h.recorded_at.strftime('%d.%m.%Y') }}</td>
+        <td><span class="text-muted text-sm">{{ h.shop or 'Steam' }}</span></td>
+        <td><strong>{{ h.price | price(h.currency or 'USD') }}</strong></td>
+        <td>{{ h.regular_price | price(h.currency or 'USD') if h.regular_price else '—' }}</td>
+        <td>
+          {% if h.cut %}
+          <span class="badge badge-warning">%{{ h.cut }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if h.url %}
+          <a href="{{ h.url }}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px; padding:4px 8px;">Git</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+{% if chart_labels %}
+<script>
+(function () {
+  const labels   = {{ chart_labels  | tojson }};
+  const prices   = {{ chart_prices  | tojson }};
+  const currency = {{ chart_currency | tojson }};
+
+  const pointRadii = prices.map((p, i) => {
+    if (i === 0 || prices[i - 1] == null || p == null) return 3;
+    return p < prices[i - 1] ? 7 : 3;
+  });
+  const pointColors = prices.map((p, i) => {
+    if (i === 0 || prices[i - 1] == null || p == null) return '#3b82f6';
+    if (p < prices[i - 1]) return '#34c759';
+    if (p > prices[i - 1]) return '#ff453a';
+    return '#3b82f6';
+  });
+
+  const darkDefaults = {
+    color: 'rgba(255,255,255,0.6)',
+    grid: { color: 'rgba(255,255,255,0.07)' },
+  };
+
+  new Chart(document.getElementById('priceChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Fiyat (' + currency + ')',
+        data: prices,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.12)',
+        borderWidth: 2,
+        pointRadius: pointRadii,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors,
+        fill: true,
+        tension: 0.3,
+        spanGaps: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: 'rgba(255,255,255,0.7)', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.parsed.y.toLocaleString('tr-TR') + ' ' + currency
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: darkDefaults.color, font: { size: 10 }, maxRotation: 40, maxTicksLimit: 14 },
+          grid: darkDefaults.grid,
+        },
+        y: {
+          ticks: {
+            color: darkDefaults.color,
+            font: { size: 11 },
+            callback: v => v.toLocaleString('tr-TR') + ' ' + currency
+          },
+          grid: darkDefaults.grid,
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% if itad_labels %}
+<script>
+(function () {
+  const labels   = {{ itad_labels   | tojson }};
+  const prices   = {{ itad_prices   | tojson }};
+  const currency = {{ itad_currency | tojson }};
+
+  new Chart(document.getElementById('itadChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'ITAD Tarihsel Fiyat (' + currency + ')',
+        data: prices,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.09)',
+        borderWidth: 2,
+        borderDash: [6, 3],
+        pointRadius: 3,
+        pointBackgroundColor: '#f59e0b',
+        fill: true,
+        tension: 0.2,
+        spanGaps: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: 'rgba(255,255,255,0.7)', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ' + currency
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(255,255,255,0.6)', font: { size: 10 }, maxRotation: 40, maxTicksLimit: 12 },
+          grid: { color: 'rgba(255,255,255,0.07)' },
+        },
+        y: {
+          ticks: {
+            color: 'rgba(255,255,255,0.6)',
+            font: { size: 11 },
+            callback: v => v.toFixed(2) + ' ' + currency
+          },
+          grid: { color: 'rgba(255,255,255,0.07)' },
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

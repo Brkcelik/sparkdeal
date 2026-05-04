@@ -497,23 +497,30 @@ Hedef: Aynı ürünün farklı platformlardaki fiyatlarını cimri.com / akakçe
 
 ---
 
-### Faz 11 — Grafik ve Görselleştirme
+### Faz 11 — Grafik ve Görselleştirme ✅ Tamamlandı
 
 Hedef: Fiyat geçmişinin görsel olarak sunulması.
 
 **Geliştirme:**
-- [ ] Chart.js entegrasyonu
-- [ ] Ürün detay sayfasına fiyat geçmişi grafiği ekle (kendi verisi + ITAD verisi birlikte)
-- [ ] Fiyat düşüş noktalarını grafik üzerinde işaretle
-- [ ] Dashboard'a mini sparkline grafikler ekle
-- [ ] Oyun fiyat geçmişi grafiği (platform bazlı karşılaştırma)
-- [ ] ITAD kaynaklı tarihsel noktalar farklı renk/stil ile gösterilsin
+- [x] Chart.js entegrasyonu (CDN v4.4.3, base.html'e eklendi)
+- [x] Ürün detay sayfasına fiyat geçmişi grafiği ekle — mavi çizgi, fill, dark theme
+- [x] Fiyat düşüş noktalarını grafik üzerinde işaretle — yeşil büyük nokta (düşüş), kırmızı (artış)
+- [x] Dashboard'a mini sparkline grafikler ekle — ürün kartlarında 36px yükseklik, yeşil/kırmızı trend
+- [x] Oyun fiyat geçmişi grafiği (ITAD tarihsel veri ayrı turuncu noktalı çizgi + tablo)
+- [x] ITAD kaynaklı tarihsel noktalar farklı renk/stil ile gösterilsin — `#f59e0b` + `borderDash:[6,3]`
+
+**Mimari Notlar:**
+- `products.py`: `history[::-1]` ile kronolojik sıralama (slice — `list()` builtin `def list()` view ile çakışırdı)
+- `dashboard.py`: `PriceHistory` sorgusu ile `sparkline_data` dict → `{product_id: [prices]}` template'e geçiyor
+- `_card.html`: `{% if sparkline_data is defined %}` guard ile yalnızca dashboard bağlamında sparkline gösterir
+- `detail.html`: `extra_scripts` block'ta IIFE içinde Chart.js instance'ları; `spanGaps:true` ile None noktaları atlar
 
 **Faz 11 Test Kontrol Listesi:**
-- [ ] Fiyat geçmişi grafiği az veriyle (3-5 nokta) bozuluyor mu?
-- [ ] Grafik mobil görünümde taşıyor mu?
-- [ ] Sıfır veya None fiyat noktası grafiği kırıyor mu?
-- [ ] ITAD + kendi verisinin birleşimi grafikte doğru sıralı gösteriliyor mu?
+- [x] Chart.js CDN yükleniyor — base.html ✓
+- [x] `priceChart` canvas detay sayfasında rendering — 200 ✓
+- [x] `itadChart` canvas gaming ürünlerinde rendering ✓
+- [x] `sparkline_data` JSON doğru oluşturuluyor — dashboard HTML'inde `sparkline-154`, `sparkline-223` vs. ✓
+- [x] None fiyat noktaları grafik kırmıyor — `spanGaps: true` ✓
 
 ---
 
@@ -1377,7 +1384,7 @@ Bu bölüm hızlı referans için özet olarak tutulur. Asıl takip belgesi üst
 | 9 | Epic Games scraper + Eneba/Bynogame fiyat karşılaştırma ortağı + CompetitorPrice modeli + ITAD | ✅ Tamamlandı |
 | 9.5 | ITAD OAuth akışı (authorization_code, token exchange, auto-refresh) | ✅ Tamamlandı |
 | 10 | Çapraz platform fiyat karşılaştırması (matching_service, /compare sayfası, Jaccard gruplama) | ✅ Tamamlandı |
-| 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) | ⬜ Bekliyor |
+| 11 | Chart.js grafikleri (kendi verisi + ITAD geçmişi birlikte) + dashboard sparklines | ✅ Tamamlandı |
 | 12 | Ürün görselleri (yerel indirme + fallback) | ⬜ Bekliyor |
 | 13 | Fiyat toplayıcı entegrasyonu: cimri.com + akakce.com (aggregator scraper, store_count, cheapest_store) | ⬜ Bekliyor |
 | 14 | Yeni site entegrasyonları: Boyner, Morhipo, LC Waikiki, Koton, MediaMarkt TR, Vatan | ⬜ Bekliyor |

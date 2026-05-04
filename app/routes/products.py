@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, abort
 from app.models import Product, Source
+import json
 
 bp = Blueprint('products', __name__)
 
@@ -135,6 +136,21 @@ def detail(product_id):
     if product.vertical == 'gaming':
         itad_history = product.external_price_history.limit(200).all()
 
+    # Chart.js için kronolojik sıralı veri (slice ile — list() view fonksiyonuyla çakışır)
+    history_asc = history[::-1]
+    chart_labels = [h.recorded_at.strftime('%d.%m.%Y %H:%M') for h in history_asc]
+    chart_prices = [round(h.price, 2) if h.price else None for h in history_asc]
+    chart_currency = product.currency or 'TRY'
+
+    itad_labels = []
+    itad_prices = []
+    itad_currency = 'USD'
+    if itad_history:
+        itad_sorted = sorted(itad_history, key=lambda h: h.recorded_at)
+        itad_labels = [h.recorded_at.strftime('%d.%m.%Y') for h in itad_sorted]
+        itad_prices = [round(h.price, 2) if h.price else None for h in itad_sorted]
+        itad_currency = itad_sorted[0].currency if itad_sorted else 'USD'
+
     return render_template(
         'products/detail.html',
         product=product,
@@ -142,4 +158,10 @@ def detail(product_id):
         stats=stats,
         cross_site=cross_site,
         itad_history=itad_history,
+        chart_labels=chart_labels,
+        chart_prices=chart_prices,
+        chart_currency=chart_currency,
+        itad_labels=itad_labels,
+        itad_prices=itad_prices,
+        itad_currency=itad_currency,
     )

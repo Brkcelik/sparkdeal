@@ -4,6 +4,42 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block page_sub %}Genel özet{% endblock %}
 
+{% block extra_scripts %}
+{% if sparkline_data %}
+<script>
+(function () {
+  const data = {{ sparkline_data | tojson }};
+  Object.entries(data).forEach(([pid, prices]) => {
+    const canvas = document.getElementById('sparkline-' + pid);
+    if (!canvas) return;
+    const rising = prices[prices.length - 1] > prices[0];
+    new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: prices.map((_, i) => i),
+        datasets: [{
+          data: prices,
+          borderColor: rising ? '#ff453a' : '#34c759',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3,
+          spanGaps: true,
+        }]
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+      }
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 
 <!-- Stat cards -->
