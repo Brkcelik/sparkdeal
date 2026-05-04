@@ -24,7 +24,7 @@ _AUTH_URL = 'https://isthereanydeal.com/oauth/authorize/'
 _HEADERS = {'Accept': 'application/json'}
 _TIMEOUT = 15
 _REDIRECT_URI = 'http://localhost:8888/callback'
-_SCOPES = 'wait_read collection_read waitlist_read game_read'
+_SCOPES = 'wait_read coll_read'
 
 # Bellek içi token cache
 _token_cache: dict = {'token': None, 'expires_at': 0.0}
@@ -190,23 +190,17 @@ def _get_access_token() -> str | None:
 
 
 def _request(url: str, params: dict) -> requests.Response | None:
-    """Bearer token ile API isteği at."""
-    token = _get_access_token()
-    if not token:
-        # Fallback: eski ?key= stili dene
-        api_key = _get_env('ITAD_API_KEY')
-        if api_key:
-            return requests.get(url, params={**params, 'key': api_key}, headers=_HEADERS, timeout=_TIMEOUT)
+    """API key ile istek at (lookup/history için)."""
+    api_key = _get_env('ITAD_API_KEY')
+    if not api_key:
         return None
-
-    hdrs = {**_HEADERS, 'Authorization': f'Bearer {token}'}
-    return requests.get(url, params=params, headers=hdrs, timeout=_TIMEOUT)
+    return requests.get(url, params={**params, 'key': api_key}, headers=_HEADERS, timeout=_TIMEOUT)
 
 
 def lookup_itad_id(steam_appid: str) -> str | None:
     """Steam appid → ITAD game UUID çöz."""
     try:
-        r = _request(f'{_BASE}/games/lookup/v1/', {'appid': steam_appid})
+        r = _request(f'{_BASE}/games/lookup/v1', {'appid': steam_appid})
         if r is None:
             return None
         r.raise_for_status()
@@ -234,7 +228,7 @@ def fetch_itad_history(product) -> int:
         return 0
 
     try:
-        r = _request(f'{_BASE}/games/history/v2/', {'id': itad_id})
+        r = _request(f'{_BASE}/games/history/v2', {'id': itad_id, 'country': 'TR'})
         if r is None:
             return 0
         r.raise_for_status()
@@ -253,13 +247,14 @@ def fetch_itad_history(product) -> int:
     for entry in entries:
         try:
             shop_name = (entry.get('shop') or {}).get('name', 'Steam')
-            price_obj = entry.get('price') or {}
+            deal = entry.get('deal') or {}
+            price_obj = deal.get('price') or {}
             price = price_obj.get('amount')
-            currency = price_obj.get('currency', 'USD')
-            regular_obj = entry.get('regular') or {}
+            currency = price_obj.get('currency', 'TRY')
+            regular_obj = deal.get('regular') or {}
             regular_price = regular_obj.get('amount')
-            cut = entry.get('cut')
-            url = entry.get('url', '')
+            cut = deal.get('cut')
+            url = ''
             ts = entry.get('timestamp', '')
 
             if price is None:
