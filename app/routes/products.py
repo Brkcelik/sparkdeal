@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, abort
 from app.models import Product, Source
-import json
 
 bp = Blueprint('products', __name__)
 
@@ -142,14 +141,29 @@ def detail(product_id):
     chart_prices = [round(h.price, 2) if h.price else None for h in history_asc]
     chart_currency = product.currency or 'TRY'
 
-    itad_labels = []
-    itad_prices = []
-    itad_currency = 'USD'
+    # ITAD chart: currency başına ayrı dataset (TRY/USD karışımı yanıltıcı olmasın)
+    _ITAD_COLORS = {
+        'TRY': '#f59e0b',
+        'USD': '#a78bfa',
+        'EUR': '#34d399',
+        'GBP': '#60a5fa',
+    }
+    itad_datasets = []
     if itad_history:
-        itad_sorted = sorted(itad_history, key=lambda h: h.recorded_at)
-        itad_labels = [h.recorded_at.strftime('%d.%m.%Y') for h in itad_sorted]
-        itad_prices = [round(h.price, 2) if h.price else None for h in itad_sorted]
-        itad_currency = itad_sorted[0].currency if itad_sorted else 'USD'
+        by_currency = {}
+        for h in sorted(itad_history, key=lambda h: h.recorded_at):
+            curr = h.currency or 'USD'
+            if curr not in by_currency:
+                by_currency[curr] = []
+            by_currency[curr].append(h)
+        # En çok kayıt olan 2 currency'yi göster
+        for curr, records in sorted(by_currency.items(), key=lambda x: -len(x[1]))[:2]:
+            itad_datasets.append({
+                'currency': curr,
+                'labels': [r.recorded_at.strftime('%d.%m.%Y') for r in records],
+                'prices': [round(r.price, 2) if r.price else None for r in records],
+                'color': _ITAD_COLORS.get(curr, '#94a3b8'),
+            })
 
     return render_template(
         'products/detail.html',
@@ -161,7 +175,5 @@ def detail(product_id):
         chart_labels=chart_labels,
         chart_prices=chart_prices,
         chart_currency=chart_currency,
-        itad_labels=itad_labels,
-        itad_prices=itad_prices,
-        itad_currency=itad_currency,
+        itad_datasets=itad_datasets,
     )

@@ -375,8 +375,8 @@
   <span class="section-count">{{ itad_history|length }} kayıt &mdash; Steam indirim geçmişi</span>
 </div>
 
-{% if itad_labels %}
-<div style="position:relative; height:220px; margin-bottom:8px; background:var(--surface); border-radius:8px; padding:16px;">
+{% if itad_datasets %}
+<div style="position:relative; height:240px; margin-bottom:8px; background:var(--surface); border-radius:8px; padding:16px;">
   <canvas id="itadChart"></canvas>
 </div>
 {% endif %}
@@ -492,56 +492,88 @@
 </script>
 {% endif %}
 
-{% if itad_labels %}
+{% if itad_datasets %}
 <script>
 (function () {
-  const labels   = {{ itad_labels   | tojson }};
-  const prices   = {{ itad_prices   | tojson }};
-  const currency = {{ itad_currency | tojson }};
+  const datasets = {{ itad_datasets | tojson }};
+
+  // Her currency için ayrı Y ekseni (en fazla 2)
+  const axisIds  = ['yLeft', 'yRight'];
+  const positions = ['left', 'right'];
+  const gridColor = 'rgba(255,255,255,0.07)';
+  const tickColor = 'rgba(255,255,255,0.55)';
+
+  const chartDatasets = datasets.map((ds, i) => ({
+    label: 'ITAD — ' + ds.currency,
+    data: ds.prices,
+    labels: ds.labels,
+    borderColor: ds.color,
+    backgroundColor: ds.color + '18',
+    borderWidth: 2,
+    borderDash: [6, 3],
+    pointRadius: 2,
+    pointBackgroundColor: ds.color,
+    fill: true,
+    tension: 0.2,
+    spanGaps: true,
+    yAxisID: axisIds[i] || axisIds[0],
+    _labels: ds.labels,
+  }));
+
+  // Tüm currency'lerin union tarihleri (boş nokta yerine her dataset kendi labels'ını kullanır)
+  // Chart.js multi-axis: her dataset farklı x olabileceğinden en uzun label dizisini x eksenine baz al
+  const allLabels = datasets.reduce((acc, ds) =>
+    ds.labels.length > acc.length ? ds.labels : acc, []);
+
+  // Her dataset'i allLabels'a hizala (eksik tarihlerde null)
+  const alignedDatasets = chartDatasets.map((cds, i) => {
+    const ds = datasets[i];
+    const map = {};
+    ds.labels.forEach((l, j) => { map[l] = ds.prices[j]; });
+    return { ...cds, data: allLabels.map(l => map[l] ?? null) };
+  });
+
+  const scales = {
+    x: {
+      ticks: { color: tickColor, font: { size: 10 }, maxRotation: 40, maxTicksLimit: 12 },
+      grid: { color: gridColor },
+    }
+  };
+  datasets.forEach((ds, i) => {
+    const id = axisIds[i] || axisIds[0];
+    if (!scales[id]) {
+      scales[id] = {
+        type: 'linear',
+        position: positions[i] || 'left',
+        ticks: {
+          color: ds.color,
+          font: { size: 10 },
+          callback: v => v.toLocaleString('tr-TR') + ' ' + ds.currency,
+        },
+        grid: i === 0 ? { color: gridColor } : { drawOnChartArea: false },
+      };
+    }
+  });
 
   new Chart(document.getElementById('itadChart').getContext('2d'), {
     type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'ITAD Tarihsel Fiyat (' + currency + ')',
-        data: prices,
-        borderColor: '#f59e0b',
-        backgroundColor: 'rgba(245,158,11,0.09)',
-        borderWidth: 2,
-        borderDash: [6, 3],
-        pointRadius: 3,
-        pointBackgroundColor: '#f59e0b',
-        fill: true,
-        tension: 0.2,
-        spanGaps: true,
-      }]
-    },
+    data: { labels: allLabels, datasets: alignedDatasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: 'rgba(255,255,255,0.7)', font: { size: 12 } } },
+        legend: { labels: { color: 'rgba(255,255,255,0.75)', font: { size: 12 } } },
         tooltip: {
           callbacks: {
-            label: ctx => ctx.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ' + currency
+            label: ctx => {
+              const ds = datasets[ctx.datasetIndex];
+              if (ctx.parsed.y == null) return null;
+              return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('tr-TR') + ' ' + ds.currency;
+            }
           }
         }
       },
-      scales: {
-        x: {
-          ticks: { color: 'rgba(255,255,255,0.6)', font: { size: 10 }, maxRotation: 40, maxTicksLimit: 12 },
-          grid: { color: 'rgba(255,255,255,0.07)' },
-        },
-        y: {
-          ticks: {
-            color: 'rgba(255,255,255,0.6)',
-            font: { size: 11 },
-            callback: v => v.toFixed(2) + ' ' + currency
-          },
-          grid: { color: 'rgba(255,255,255,0.07)' },
-        }
-      }
+      scales,
     }
   });
 })();
