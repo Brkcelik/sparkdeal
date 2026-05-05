@@ -11,6 +11,8 @@ Türkiye'deki e-ticaret, moda/spor ve oyun platformlarını takip eden; fiyat ge
 - **ITAD entegrasyonu** — Steam oyunları için yıllara geriye giden tarihsel fiyat geçmişi
 - **Çapraz platform karşılaştırması** — Aynı ürünü farklı sitelerde ara, en ucuz platformu göster (/compare)
 - **Rakip fiyat karşılaştırması** — Eneba ve Bynogame fiyatları gaming ürünlerinde gösterilir
+- **Fiyat geçmişi grafikleri** — Chart.js ile interaktif fiyat çizgisi; düşüş noktaları yeşil, ITAD geçmişi turuncu noktalı
+- **Dashboard sparkline'ları** — Her ürün kartında trend mini grafik
 - **Alarm sistemi** — Hedef fiyat, tüm zamanların en düşüğü, kelime ve kategori alarmları
 - **Otomatik tarama** — APScheduler ile periyodik scraping
 
@@ -66,7 +68,7 @@ flask fetch-itad-history     # Tüm oyunlar için geçmiş çekin
 - **Backend:** Python, Flask, SQLAlchemy, SQLite (WAL)
 - **Scraping:** requests + BeautifulSoup, Playwright
 - **Otomasyon:** APScheduler
-- **Frontend:** Jinja2, HTML/CSS/JS (koyu tema)
+- **Frontend:** Jinja2, HTML/CSS/JS (koyu tema), Chart.js v4.4.3
 
 ## Yol Haritası
 
@@ -85,7 +87,7 @@ flask fetch-itad-history     # Tüm oyunlar için geçmiş çekin
 | 9 | Epic Games + Eneba/Bynogame karşılaştırma + ITAD | ✅ |
 | 9.5 | ITAD OAuth akışı (authorization_code, token yönetimi) | ✅ |
 | 10 | Çapraz platform fiyat karşılaştırması (/compare, Jaccard gruplama) | ✅ |
-| 11 | Chart.js fiyat geçmişi grafikleri | ⬜ |
+| 11 | Chart.js fiyat geçmişi grafikleri + dashboard sparklines | ✅ |
 | 12 | Ürün görselleri (yerel indirme) | ⬜ |
 | 13 | Fiyat toplayıcı: cimri.com + akakce.com | ⬜ |
 | 14 | Yeni siteler: Boyner, Morhipo, MediaMarkt TR, Vatan vb. | ⬜ |
